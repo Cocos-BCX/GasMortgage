@@ -175,6 +175,8 @@ export default {
           
           _this.queryGasAjax()
           _this.queryDataByIdsAjax()
+        } else if(res.code == 402){
+          return false
         } else {
 
         }
@@ -196,9 +198,17 @@ export default {
     },
     claimVestingBalanceAjax(){
       let _this = this
+      if (this.receiveGAS <= 0) {
+          Toast({
+            message: '无可领取GAS',
+            className: 'toast-style',
+            duration: 2000
+          });
+          return false
+      }
       claimVestingBalance(_this.asset_id).then( res=>{
         console.log('-----res--------claimVestingBalance---------')
-          console.log(res)
+        console.log(res)
         if (res.code == 1) {
           Toast({
             message: '领取成功',
@@ -600,7 +610,6 @@ export default {
   line-height: 0.34rem;
   font-size: 0.14rem;
   font-weight:400;
-  color:rgba(165,169,177,1);
 }
 .mortgage-num p{
   height: 0.34rem;
@@ -642,8 +651,8 @@ export default {
 }
 .receiving-account-bar ul.tab li span{
   
-  height:21px;
-  font-size:15px;
+  height: 0.2rem;
+  font-size: 0.14rem;
   font-weight:400;
   color:rgba(165,169,177,1);
 }

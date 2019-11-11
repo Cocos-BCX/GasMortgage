@@ -18,6 +18,19 @@ html, body{
     font-size: 100px;
     background:rgba(246,247,251,1);
 }
+
+input::-webkit-input-placeholder{
+    color:rgba(165,169,177,1);
+}
+input::-moz-placeholder{   /* Mozilla Firefox 19+ */
+    color:rgba(165,169,177,1);
+}
+input:-moz-placeholder{    /* Mozilla Firefox 4 to 18 */
+    color:rgba(165,169,177,1);
+}
+input:-ms-input-placeholder{  /* Internet Explorer 10-11 */ 
+    color:rgba(165,169,177,1);
+}
 a{
     text-decoration:none;
 }
