@@ -50,7 +50,10 @@
           <p>余额：{{myCOCOS}} COCOS</p>
           <!-- <p class="rental-list">租借列表</p> -->
         </div>
-        <div class="GAS-mortgage-title">GAS 抵押</div>
+        <div class="GAS-mortgage-title">
+          <p>GAS 抵押</p>
+          <!-- <ul class="blance">可赎回：100 COCOS</ul> -->
+        </div>
         <div class="mortgage-num">
           <input type="text" placeholder="抵押 COCOS 数量" v-model="mortgageCOCOSAmount">
           <p>≈ {{conversionGAS}} GAS</p>
@@ -97,6 +100,7 @@ import {
 } from "../../libs/bcx.api";
 import { cacheSession, cacheKey } from "../../libs/Utils"
 import { Indicator, Toast } from "mint-ui";
+import { IntegerOrDecimalReg1 } from '../../libs/regular'
 export default {
   data() {
     return {
@@ -111,8 +115,10 @@ export default {
       isMortgage: true,
 
       receiverGASaccount: '',
+      receiverGASaccountRegular: '',
       isSelf: true,
       mortgageCOCOSAmount: '',
+      mortgageCOCOSAmountRegular: '',
       conversionGAS: '',
 
       asset_id: ''
@@ -121,11 +127,24 @@ export default {
   watch: {
     'mortgageCOCOSAmount': function (val) {
       let _this = this
-      queryGas(val).then(res => {
-        console.log('-----queryGas------res------')
-        console.log(res)
-        _this.conversionGAS = res.data.amount
-      })
+      
+      if (IntegerOrDecimalReg1.test(val)) {
+        this.mortgageCOCOSAmountRegular = this.mortgageCOCOSAmount
+        queryGas(val).then(res => {
+          console.log('-----queryGas------res------')
+          console.log(res)
+          _this.conversionGAS = res.data.amount
+        })
+      } else {
+        this.mortgageCOCOSAmount = this.mortgageCOCOSAmountRegular
+      }
+    },
+    'receiverGASaccount': function (val) {
+      if (IntegerOrDecimalReg1.test(val)) {
+        this.receiverGASaccountRegular = this.receiverGASaccount
+      } else {
+        this.receiverGASaccount = this.receiverGASaccountRegular
+      }
     }
   },
   mounted() {
@@ -596,6 +615,9 @@ export default {
   font-weight: 400;
   color:rgba(38,42,51,1);
   margin-top: 0.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .mortgage-num {
   width: 100%;
@@ -603,6 +625,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-bottom: 1px solid rgba(230,230,230,1);
 }
 .mortgage-num input {
   width: 50%;
@@ -610,6 +633,9 @@ export default {
   line-height: 0.34rem;
   font-size: 0.14rem;
   font-weight:400;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .mortgage-num p{
   height: 0.34rem;
@@ -618,7 +644,14 @@ export default {
   color:rgba(165,169,177,1);
   line-height: 0.2rem;
   padding-bottom: 0.14rem;
-  border-bottom: 1px solid rgba(230,230,230,1);
+}
+.mortgage-num .blance{
+  
+  height: 0.18rem;
+  font-size: 0.12rem;
+  font-weight:400;
+  color:rgba(38,42,51,1);
+  line-height: 0.18rem;
 }
 .receiving-account-bar .title{
   width: 100%;
