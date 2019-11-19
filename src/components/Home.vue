@@ -3,10 +3,10 @@
     <div class="center-container">
       <div class="available-GAS">
         <p class="title">GAS</p>
-        <div class="available-bar">可用：{{myAvailableGAS}} GAS / {{totalGAS}} GAS</div>
+        <div class="available-bar">可用：{{myAvailableGAS || 0}} GAS / {{totalGAS || 0}} GAS</div>
         <p class="receive-title">可领取GAS：</p>
         <div class="receive-content">
-          <p class="num">{{receiveGAS}}</p>
+          <p class="num">{{receiveGAS || 0}}</p>
           <p class="unit">GAS</p>
         </div>
         <a href="javascript:void(0);" class="collect-immediately-btn" @click="claimVestingBalanceAjax()">立即领取</a>
@@ -18,14 +18,14 @@
           <div>
             <p class="tit">赎回中：</p>
             <ul class="receive-content">
-              <li class="num">{{redeemAsset}}</li>
+              <li class="num">{{redeemAsset || 0}}</li>
               <li class="unit">COCOS</li>
             </ul>
           </div>
           <div>
             <p class="tit">已抵押：</p>
             <ul class="receive-content">
-              <li class="num">{{mortgageAsset}}</li>
+              <li class="num">{{mortgageAsset || 0}}</li>
               <li class="unit">COCOS</li>
             </ul>
           </div>
@@ -47,16 +47,17 @@
         </ul>
         
         <div class="balance">
-          <p>余额：{{myCOCOS}} COCOS</p>
-          <!-- <p class="rental-list">租借列表</p> -->
+          <p>余额：{{availablBalance || 0}} COCOS</p>
+          <router-link class="rental-list" to="/rentallist">租借列表</router-link>
         </div>
         <div class="GAS-mortgage-title">
-          <p>GAS 抵押</p>
+          <p v-if="isMortgage">GAS 抵押</p>
+          <p v-if="!isMortgage">GAS 赎回</p>
           <!-- <ul class="blance">可赎回：100 COCOS</ul> -->
         </div>
         <div class="mortgage-num">
-          <input type="text" placeholder="抵押 COCOS 数量" v-model="mortgageCOCOSAmount">
-          <p>≈ {{conversionGAS}} GAS</p>
+          <input type="text" placeholder="请输入 COCOS 数量" v-model="mortgageCOCOSAmount">
+          <p>≈ {{conversionGAS || 0}} GAS</p>
         </div>
 
         <div class="receiving-account-bar">
@@ -90,27 +91,29 @@
 <script>
 import {
   queryAccountBalances,
-  lookupBlockRewardsById,
   queryDataByIds,
   getAccountInfo,
+  queryAccountInfo,
   queryVestingBalance,
   queryGas,
   updateCollateralForGas,
-  claimVestingBalance
+  claimVestingBalance,
 } from "../../libs/bcx.api";
 import { cacheSession, cacheKey } from "../../libs/Utils"
-import { Indicator, Toast } from "mint-ui";
-import { IntegerOrDecimalReg1 } from '../../libs/regular'
+import { Indicator, Toast, MessageBox } from "mint-ui";
+import { IntegerOrDecimalReg2 } from '../../libs/regular'
 export default {
   data() {
     return {
-      myCOCOS: '',
+      // myCOCOS: '',
+      availablBalance: '',
       myAvailableGAS: '',
       receiveGAS: '',
       totalGAS: '',
 
       redeemAsset: '',
-      mortgageAsset: '',
+      mortgageAsset: 0,
+      mortgageAssetSelf: 0,
 
       isMortgage: true,
 
@@ -121,31 +124,42 @@ export default {
       mortgageCOCOSAmountRegular: '',
       conversionGAS: '',
 
-      asset_id: ''
+      asset_id: '',
+      mortgageList: [],
+      beneficiaryAccountNameJson:{}
     };
   },
   watch: {
     'mortgageCOCOSAmount': function (val) {
       let _this = this
-      
-      if (IntegerOrDecimalReg1.test(val)) {
+      if (!val) {
         this.mortgageCOCOSAmountRegular = this.mortgageCOCOSAmount
-        queryGas(val).then(res => {
-          console.log('-----queryGas------res------')
-          console.log(res)
-          _this.conversionGAS = res.data.amount
-        })
+        return false
+      }
+      
+      if (IntegerOrDecimalReg2.test(val)) {
+          if (Number(this.mortgageCOCOSAmount) > 999999999) {
+            this.mortgageCOCOSAmount = this.mortgageCOCOSAmountRegular
+          } else {
+            this.mortgageCOCOSAmountRegular = this.mortgageCOCOSAmount
+            queryGas(val).then(res => {
+              console.log('-----queryGas------res------')
+              console.log(res)
+              _this.conversionGAS = res.data.amount
+            })
+          }
+        
       } else {
         this.mortgageCOCOSAmount = this.mortgageCOCOSAmountRegular
       }
     },
-    'receiverGASaccount': function (val) {
-      if (IntegerOrDecimalReg1.test(val)) {
-        this.receiverGASaccountRegular = this.receiverGASaccount
-      } else {
-        this.receiverGASaccount = this.receiverGASaccountRegular
-      }
-    }
+    // 'receiverGASaccount': function (val) {
+    //   if (IntegerOrDecimalReg1.test(val)) {
+    //     this.receiverGASaccountRegular = this.receiverGASaccount
+    //   } else {
+    //     this.receiverGASaccount = this.receiverGASaccountRegular
+    //   }
+    // }
   },
   mounted() {
     this.queryAccountBalancesAjax()
@@ -159,15 +173,19 @@ export default {
     },
     queryAccountBalancesAjax(){
       let _this = this
-      _this.myCOCOS = ''
+      // _this.myCOCOS = ''
       _this.myAvailableGAS = ''
       queryAccountBalances().then( res => {
         console.log('---------queryAccountBalances-------------')
         console.log(res)
         if (res.code == 1) {
-          _this.myCOCOS = res.data.COCOS
-          _this.myAvailableGAS = res.data.GAS.toFixed(5)
-          // _this.lookupBlockRewardsByIdAjax()
+          // if (res.data.COCOS) {
+          //   _this.myCOCOS = res.data.COCOS
+          // }
+          if (res.data.GAS) {
+            _this.myAvailableGAS = res.data.GAS.toFixed(5)
+          }
+          
           _this.queryVestingBalanceAjax()
         }
       })
@@ -181,38 +199,49 @@ export default {
         console.log('----------queryVestingBalance------------')
         console.log(res)
         if (res.code == 1) {
-
+          _this.totalGAS = Number(_this.myAvailableGAS)
           for (let i = 0; i < res.data.length; i++) {
             if (res.data[i].type == "cashback_gas") {
-              _this.totalGAS = (Number(_this.myAvailableGAS) + Number(res.data[i].return_cash)).toFixed(5)
+              _this.totalGAS = (Number(_this.totalGAS) + Number(res.data[i].return_cash)).toFixed(5)
               _this.receiveGAS = res.data[i].available_balance.amount
               _this.asset_id = res.data[i].id
               break;
             }
           }
           
+        _this.mortgageAjax()
           
-          _this.queryGasAjax()
-          _this.queryDataByIdsAjax()
         } else if(res.code == 402){
           return false
         } else {
-
+          _this.codeErr(res)
         }
+        // _this.queryGasAjax()
       })
     },
-    lookupBlockRewardsByIdAjax(){
+    queryAccountInfoAjax(){
       let _this = this
-      _this.totalGAS = 0
-      _this.receiveGAS = 0
-      lookupBlockRewardsById().then( res => {
-        if (res.code == 1) {
-          _this.totalGAS = Number(_this.myAvailableGAS) + Number(res.data.return_cash)
-          _this.receiveGAS = res.data.available_balance.amount
+      queryAccountInfo().then( res => {
+        console.log('-----------queryAccountInfo--------------')
+        console.log(res)
+        
+          // 总余额
+        let balances = res.data.balances.filter((blance) => {
+          return blance.asset_type == "1.3.0"
+        })[0];
+        // 冻结余额  availablBalance 可用余额
+        let lockedAsset = 0
+        if (res.data.account.asset_locked.locked_total.length == 0) {
           
-          _this.queryGasAjax()
-          _this.queryDataByIdsAjax()
+          _this.availablBalance = Number((Number(balances.balance) - 0)/Math.pow(10,5))
+        } else {
+          let lockedAsset = res.data.account.asset_locked.locked_total.filter((lockedblance) => {
+            if (lockedblance[0] == "1.3.0") return lockedblance 
+          })[0];
+          _this.availablBalance = parseInt((Number(balances.balance) - Number(lockedAsset[1]))/Math.pow(10,5))
         }
+        _this.queryDataByIdsAjax()
+        
       })
     },
     claimVestingBalanceAjax(){
@@ -235,13 +264,13 @@ export default {
             duration: 2000
           });
         } else {
-        
-          console.log(res)
-          Toast({
-            message: '领取失败',
-            className: 'toast-style',
-            duration: 2000
-          });
+          _this.codeErr(res)
+          // console.log(res)
+          // Toast({
+          //   message: '领取失败',
+          //   className: 'toast-style',
+          //   duration: 2000
+          // });
         }
         
         _this.queryAccountBalancesAjax()
@@ -249,14 +278,10 @@ export default {
     },
     queryDataByIdsAjax(){
       let _this = this
-      new Promise(function (resolve, reject) {
+      console.log('==/////////////---------')
         getAccountInfo().then( getAccountInfoResult => {
-          resolve(getAccountInfoResult)
-        })
-        
-          
-      }).then( getAccountInfoResult => {
         return new Promise(function (resolve, reject) {
+      console.log('==/////////getAccountInfoResult////---------')
           console.log(getAccountInfoResult[cacheKey.accountId])
           queryDataByIds([getAccountInfoResult[cacheKey.accountId]]).then( res => {
               if (res.code == 1) {
@@ -281,19 +306,96 @@ export default {
           }).then( asset_id => {
             queryDataByIds([asset_id]).then( res => {
                 if (res.code == 1) {
-                  _this.redeemAsset =  Number(_this.redeemAsset)/Math.pow(10,res.data[0].precision);  
+                  _this.redeemAsset =  Number(_this.redeemAsset)/Math.pow(10,res.data[0].precision);
+                  
                 }
               })
           })
     },
-    queryGasAjax(){
+    
+    // 通过用户accountId获取用户名称
+    queryDataByIdsAjaxSearch(ids){
       let _this = this
-      queryGas(10).then(res => {
-        console.log('-----queryGas------res------')
+      console.log('ids')
+      console.log(ids)
+      queryDataByIds(ids).then( res => {
+        console.log('----------queryDataByIdsAjaxSearch----------')
         console.log(res)
-        _this.mortgageAsset = (_this.totalGAS/(res.data.amount/10)).toFixed(2)
+        console.log()
+        let accountNameObj = _this.beneficiaryAccountNameJson
+        _this.beneficiaryAccountNameJson = {}
+        accountNameObj[ids[0]] = res.data[0].name
+        _this.beneficiaryAccountNameJson = accountNameObj
+        console.log('================')
+        console.log(_this.beneficiaryAccountNameJson)
       })
     },
+    mortgageAjax(){
+      // mortgager
+      let _this = this
+      console.log('************')
+      getAccountInfo().then( res => {
+        console.log('=======getAccountInfo=======')
+        console.log(res)
+      let localhost = "http://192.168.15.60:8010/api/v1/mortgage"
+        let resUrl = "http://vote.test.cocosbcx.net/api/api/v1/mortgage";
+        let formData = {
+          account_id: res.account_id,
+          type: 'mortgager'
+        }
+        _this.$axios
+        .post(resUrl, formData)
+        .then(function(response) {
+          console.log('-------------mortgageAjax----------')
+          console.log(response)
+          _this.mortgageList = response.data.result
+          _this.mortgageAssetSelf = 0
+          _this.mortgageAsset = 0
+
+          // 验证接口数组是否存在
+          if (response.data.result) {
+            // 过滤抵押给自己的数量
+            let myMortgager = response.data.result.filter((li) => {
+              return li.beneficiary == res.account_id
+            })[0]
+            _this.mortgageAssetSelf = (Number(myMortgager.collateral)/Math.pow(10,5))
+
+            // 自己抵押给所有人的数量  包括自己
+            let myMortgagerlist = response.data.result
+            for (let i = 0; i < myMortgagerlist.length; i++) {
+              console.log('Number(myMortgagerlist[i].collateral)/Math.pow(10,5)')
+              console.log(Number(myMortgagerlist[i].collateral)/Math.pow(10,5))
+              _this.mortgageAsset += Number(myMortgagerlist[i].collateral)/Math.pow(10,5)
+              console.log(_this.mortgageAsset)
+              
+            }
+            _this.mortgageAsset = _this.mortgageAsset.toFixed(5)
+          
+          for (let i = 0; i < response.data.result.length; i++) {
+            response.data.result[i].collateral_format = (Number(response.data.result[i].collateral)/Math.pow(10,5))
+
+            // 通过用户accountId获取用户名称
+            _this.queryDataByIdsAjaxSearch([response.data.result[i].beneficiary])
+          }
+        // _this.queryDataByIdsAjax()
+          }
+          _this.queryAccountInfoAjax()  
+        })
+      }).catch(err => {
+        console.log('-----------err-----------')
+        console.log(err)
+      })
+    },
+    // queryGasAjax(){
+    //   let _this = this
+    //   queryGas(10).then(res => {
+    //     console.log('-----queryGas------res------')
+    //     console.log(res)
+    //     // _this.mortgageAssetSelf = (_this.totalGAS/(res.data.amount/10)).toFixed(2)
+        
+    //     _this.queryAccountInfoAjax()
+    //   })
+    // },
     updateCollateralForGasAjas(){
       let _this = this
       if (_this.mortgageCOCOSAmount <= 0) {
@@ -311,11 +413,29 @@ export default {
             resolve(getAccountInfoResult)
           })
         }).then( getAccountInfoResult=>{
+          console.log('-------getAccountInfoResult---------')
+          console.log(getAccountInfoResult)
           let amount = 0
           if (_this.isMortgage) {
-            amount = Number(_this.mortgageCOCOSAmount) + Number(_this.mortgageAsset)
+            amount = Number(_this.mortgageCOCOSAmount) + Number(_this.mortgageAssetSelf)
+            if (Number(_this.mortgageCOCOSAmount) > Number(_this.availablBalance)) {
+              Toast({
+                message: '抵押值不足',
+                className: 'toast-style',
+                duration: 2000
+              });
+              return false
+            }
           } else {
-            amount = Number(_this.mortgageAsset) - Number(_this.mortgageCOCOSAmount)
+            amount = Number(_this.mortgageAssetSelf) - Number(_this.mortgageCOCOSAmount)
+            if (amount < 0) {
+              Toast({
+                message: '抵押值不足',
+                className: 'toast-style',
+                duration: 2000
+              });
+              return false
+            }
           }
           updateCollateralForGas({
             // 抵押人
@@ -330,61 +450,280 @@ export default {
             console.log('updateCollateralForGasAjas-----------------res')
             console.log(res)
             if (res.code == 1) {
-              Toast({
-                message: '成功',
-                className: 'toast-style',
-                duration: 2000
-              });
-            } else {
+              // Toast({
+              //   message: _this.isMortgage?'抵押成功':'赎回成功',
+              //   className: 'toast-style',
+              //   duration: 2000
+              // });
               
-              Toast({
-                message: '失败',
-                className: 'toast-style',
-                duration: 2000
+              Indicator.open({
+                spinnerType: "fading-circle"
               });
+              _this.receiverGASaccount = ''
+              MessageBox.alert(_this.isMortgage?'抵押成功':'赎回成功').then(action => {
+                setTimeout(function () {
+                  Indicator.close();
+                  _this.queryAccountBalancesAjax()
+                }, 1000)
+              });
+              
+            } else {
+              _this.codeErr(res)
+              _this.receiverGASaccount = ''
+              
+              // Toast({
+              //   message: '失败',
+              //   className: 'toast-style',
+              //   duration: 2000
+              // });
+              // _this.queryAccountBalancesAjax()
             }
-            _this.receiverGASaccount = ''
-            _this.queryAccountBalancesAjax()
           })
         })
       } else {
-         let amount = 0
-        if (_this.isMortgage) {
-          amount = Number(_this.mortgageCOCOSAmount) + Number(_this.mortgageAsset)
-        } else {
-          amount = Number(_this.mortgageCOCOSAmount)
+        if (!_this.receiverGASaccount) {
+          Toast({
+            message: '抵押人账户不能为空',
+            className: 'toast-style',
+            duration: 2000
+          });
+          return false
         }
-        updateCollateralForGas({
-          // 抵押人
-          mortgager: _this.receiverGASaccount,
-          // 受益人
-          beneficiary: _this.isSelf?getAccountInfoResult[cacheKey.accountName]:_this.receiverGASaccount,
-          // 抵押数量  COCOS
-          amount: amount,
-          // 是否是提议
-          isPropose: false
-        }).then(res=>{
-          console.log('updateCollateralForGasAjas-----------------res')
-          console.log(res)
-            if (res.code == 1) {
+        new Promise(function (resolve, reject) {
+          getAccountInfo().then( getAccountInfoResult => {
+            resolve(getAccountInfoResult)
+          })
+        }).then( getAccountInfoResult=>{
+          // mortgageCOCOSAmount
+          console.log('-------getAccountInfoResult---------')
+          console.log(getAccountInfoResult)
+          console.log(_this.beneficiaryAccountNameJson)
+          let ifHave = false
+          let amount = 0
+          console.log(_this.mortgageList)
+          console.log(_this.beneficiaryAccountNameJson)
+          let targetAccountId = ''
+          let ifHove = false
+          for (const key in _this.beneficiaryAccountNameJson) {
+            if (_this.beneficiaryAccountNameJson[key] == _this.receiverGASaccount) {
+              ifHove = true
+              targetAccountId = key
+              break;
+            }
+          }
+          if (_this.isMortgage) {
+            if (ifHove) {
+              let targetAccount = _this.mortgageList.filter( li => {
+                return li.beneficiary == targetAccountId
+              })
+              amount = Number(targetAccount[0].collateral_format) + Number(_this.mortgageCOCOSAmount)
+            } else {
+              amount = _this.mortgageCOCOSAmount
+            }
+          } else {
+            
+            if (ifHove) {
+              let targetAccount = _this.mortgageList.filter( li => {
+                return li.beneficiary == targetAccountId
+              })
+              if (Number(_this.mortgageCOCOSAmount) > Number(targetAccount[0].collateral_format)) {
+                
+                Toast({
+                  message: '抵押值不足',
+                  className: 'toast-style',
+                  duration: 2000
+                });
+                return false
+              } else {
+                amount = Number(targetAccount[0].collateral_format) - Number(_this.mortgageCOCOSAmount)
+              }
+              
+            } else {
               Toast({
-                message: '成功',
+                message: '抵押值不足',
                 className: 'toast-style',
                 duration: 2000
+              });
+              return false
+            }
+          }
+          
+        
+        // 空数组
+          // for (let i = 0; i < _this.mortgageList.length; i++) {
+          //   if (_this.receiverGASaccount == _this.beneficiaryAccountNameJson[_this.mortgageList[i].beneficiary]) {
+          //     ifHave = true
+          //     if (_this.isMortgage) {
+          //       let amount = 0
+                
+          //       amount = Number(_this.mortgageList[i].collateral_format) + Number(_this.mortgageCOCOSAmount)
+          //       console.log(amount)
+          //     } else {
+          //       amount = Number(_this.mortgageCOCOSAmount) - Number(_this.mortgageList[i].collateral_format)
+          //     }
+          //     break;
+          //   }
+          //       console.log(amount)
+          // }
+          // if (!ifHave) {
+          //   if (_this.isMortgage) {
+          //     amount = Number(_this.mortgageAssetSelf)
+          //   } else {
+              
+          //     Toast({
+          //       message: '抵押值不足',
+          //       className: 'toast-style',
+          //       duration: 2000
+          //     });
+          //     return false
+          //   }
+          // }
+          updateCollateralForGas({
+            // 抵押人
+            mortgager: getAccountInfoResult[cacheKey.accountName],
+            // 受益人
+            beneficiary: _this.receiverGASaccount,
+            // 抵押数量  COCOS
+            amount: amount,
+            // 是否是提议
+            isPropose: false
+          }).then(res=>{
+            console.log('updateCollateralForGasAjas-----------------res')
+            console.log(res)
+            if (res.code == 1) {
+              // Toast({
+              //   message: _this.isMortgage?'抵押成功':'赎回成功',
+              //   className: 'toast-style',
+              //   duration: 2000
+              // });
+              // _this.receiverGASaccount = ''
+              // _this.queryAccountBalancesAjax()
+              
+              _this.receiverGASaccount = ''
+              MessageBox.alert(_this.isMortgage?'抵押成功':'赎回成功').then(action => {
+                setTimeout(function () {
+                  _this.queryAccountBalancesAjax()
+                }, 1000)
               });
             } else {
               
-              Toast({
-                message: '失败',
-                className: 'toast-style',
-                duration: 2000
-              });
+            _this.codeErr(res)
+              // Toast({
+              //   message: '失败',
+              //   className: 'toast-style',
+              //   duration: 2000
+              // });
+              // _this.receiverGASaccount = ''
+              // setTimeout( function () {
+              //   _this.queryAccountBalancesAjax()
+              // }, 2000)
             }
-            _this.receiverGASaccount = ''
-          _this.queryAccountBalancesAjax()
+          })
         })
       }
       
+    },
+    codeErr(res){
+      let _this = this;
+          console.log('===')
+      if (res.code == 112) {
+          Toast({
+            duration: 2000,
+            message: _this.$t('tipsMessage.business.importAccountPrivateKey'),
+            className: 'toast-style',
+          })
+        return false
+      } else if (res.code == 105) {
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.common[6]'),
+            className: 'toast-style',
+          })
+        return false
+      } else if (res.code == 402) {
+        return false
+      } else {
+        if (res.message.indexOf('Parameter is missing') > -1) {
+          
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.common[101]'),
+            className: 'toast-style',
+          })
+        } else if (res.message.indexOf("world view name can't start whith a digit")>-1) {
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.creatWorldView[3]'),
+            className: 'toast-style',
+          })
+        } else if (res.message.indexOf("Please login first")>-1) {
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.common[114]'),
+            className: 'toast-style',
+          })
+        } else if (res.message.indexOf('Insufficient Balance') > -1) {
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.common.InsufficientBalance'),
+            className: 'toast-style',
+          })
+        } else if (res.message.indexOf('You\'re not a nh asset creator')>-1) {
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.creatWorldView[2]'),
+            className: 'toast-style',
+          })
+        } else if (res.message.indexOf("world view name can't start whith a digit")>-1) {
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.creatWorldView[3]'),
+            className: 'toast-style',
+          })
+        } else if (res.message.indexOf("Most likely a uniqueness constraint is violated")>-1) {
+          
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.creatWorldView[0]'),
+            className: 'toast-style',
+          })
+        } else if (res.message.indexOf("missing required owner authority")>-1) {
+          
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.creatWorldView[0]'),
+            className: 'toast-style',
+          })
+        } else if (res.message.indexOf("locked->value >= 0")>-1) {
+          
+          Toast({
+            duration: 2000,
+            message: _this.$t('tipsMessage.business.lockedGreaterThanValue'),
+            className: 'toast-style',
+          })
+        } else if (res.message.indexOf("Wrong password")>-1) {
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.common[6]'),
+            className: 'toast-style',
+          })
+          
+        } else if (res.message.indexOf("Account does not exist")>-1) {
+          Toast({
+            duration: 2000,
+            message: '账户不存在',
+            className: 'toast-style',
+          })
+        } else {
+            Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.common[4]'),
+            className: 'toast-style',
+          })
+        }
+      }
+      
+      return false
     }
 
   }
@@ -606,6 +945,7 @@ export default {
   font-weight:400;
   color:rgba(0,122,255,1);
   line-height: 0.2rem;
+  display: block;
 }
 .GAS-mortgage-title{
   width: 100%;
@@ -696,7 +1036,7 @@ export default {
   height: 0.2rem;
   font-size: 0.14rem;
   font-weight:400;
-  color:rgba(165,169,177,1);
+  color:rgba(38,42,51,1);
   line-height: 0.2rem;
   padding-bottom: 0.14rem;
 }
