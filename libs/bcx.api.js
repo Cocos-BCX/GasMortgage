@@ -68,6 +68,7 @@ export let browserConnect = function () {
     } else {
       currentTimer = setInterval(() => {
         if (window.BcxWeb) {
+          Indicator.close();
           bcx = window.BcxWeb
           clearInterval(currentTimer)
           resolve(true)
@@ -75,6 +76,7 @@ export let browserConnect = function () {
         }
         requestSeconds++
         if (requestSeconds >= requestSecondsMax) {
+          Indicator.close();
           clearInterval(currentTimer)
 
           let tipsMessage = {}
@@ -106,7 +108,6 @@ export let browserConnect = function () {
 export let getAccountInfo = function () {
   // let loadingInstance = Loading.service();
   Indicator.open({
-    // text: '加载中...',
     spinnerType: "fading-circle"
   });
   return new Promise( (resolve, reject) => {
@@ -158,27 +159,27 @@ export let getAccountInfo = function () {
 
 
 // 查询账户信息
-// export let queryAccountInfo = function () {
-//   return new Promise( function (resolve, reject) {
-//     Indicator.open({
-//       // text: '加载中...',
-//       spinnerType: "fading-circle"
-//     });
-//     let getAccountInfoResult = await getAccountInfo()
-//     if (!getAccountInfoResult) return false
-//     bcx.queryAccountInfo({
-//       account: getAccountInfoResult[cacheKey.accountName] || ''
-//       // account: 'syling'
-//     }).then(res=>{
-//       Indicator.close();
-//       resolve(res)
-//     }).catch(err=>{
-//       Indicator.close();
-//       console.log('--------err-------')
-//       console.log(err)
-//     })
-//   })
-// }
+export let queryAccountInfo = function () {
+  return new Promise(function (resolve, reject) {
+    Indicator.open({
+      spinnerType: "fading-circle"
+    });
+    getAccountInfo().then(getAccountInfoResult => {
+      if (!getAccountInfoResult) return false
+
+      bcx.queryAccountInfo({
+        account: getAccountInfoResult[cacheKey.accountName] || ''
+      }).then(res=>{
+        Indicator.close();
+        resolve(res)
+      }).catch(err=>{
+        Indicator.close();
+        console.log('--------err-------')
+        console.log(err)
+      })
+    })
+  })
+}
 
 // 查询数据通过id
 export let queryDataByIds = function (ids) {
@@ -304,6 +305,8 @@ export let updateCollateralForGas = function (params) {
     spinnerType: 'fading-circle'
   });
   return new Promise(function (resolve, reject) {
+    console.log('------updateCollateralForGas--++++++++++++++++++++----params---------------')
+    console.log(params)
     bcx.updateCollateralForGas({
         // 抵押人
         mortgager: params.mortgager,
@@ -314,9 +317,9 @@ export let updateCollateralForGas = function (params) {
         // 是否是提议
         isPropose: params.isPropose
     }).then(res=>{
+      Indicator.close();
       console.log('----------updateCollateralForGas-----res-----------')
       console.log(res)
-      Indicator.close();
       resolve(res)
     }).catch( err => {
       Indicator.close();
