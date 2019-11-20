@@ -3,27 +3,27 @@
     <div class="center-container">
       <div class="available-GAS">
         <p class="title">GAS</p>
-        <div class="available-bar">可用：{{myAvailableGAS || 0}} GAS / {{totalGAS || 0}} GAS</div>
-        <p class="receive-title">可领取GAS：</p>
+        <div class="available-bar">{{$t('business.available')}}：{{myAvailableGAS || 0}} GAS / {{totalGAS || 0}} GAS</div>
+        <p class="receive-title">{{$t('business.GASCouldBeReceived')}}：</p>
         <div class="receive-content">
           <p class="num">{{receiveGAS || 0}}</p>
           <p class="unit">GAS</p>
         </div>
-        <a href="javascript:void(0);" class="collect-immediately-btn" @click="claimVestingBalanceAjax()">立即领取</a>
+        <a href="javascript:void(0);" class="collect-immediately-btn" @click="claimVestingBalanceAjax()">{{$t('business.receiveImmediately')}}</a>
       </div>
 
       <div class="cocos-container">
         <div class="title">COCOS</div>
         <div class="redeem-info">
           <div>
-            <p class="tit">赎回中：</p>
+            <p class="tit">{{$t('business.redeeming')}}：</p>
             <ul class="receive-content">
               <li class="num">{{redeemAsset || 0}}</li>
               <li class="unit">COCOS</li>
             </ul>
           </div>
           <div>
-            <p class="tit">已抵押：</p>
+            <p class="tit">{{$t('business.mortgaged')}}：</p>
             <ul class="receive-content">
               <li class="num">{{mortgageAsset || 0}}</li>
               <li class="unit">COCOS</li>
@@ -37,52 +37,52 @@
           <li @click="changeIsMortgage(true)">
             <img v-if="isMortgage" src="../assets/images/circle.png" alt="">
             <img v-if="!isMortgage" src="../assets/images/nochoice.png" alt="">
-            <span>抵押</span>
+            <span>{{$t('business.mortgage')}}</span>
           </li>
           <li @click="changeIsMortgage(false)">
             <img v-if="!isMortgage" src="../assets/images/circle.png" alt="">
             <img v-if="isMortgage" src="../assets/images/nochoice.png" alt="">
-            <span>赎回</span>
+            <span>{{$t('business.redeem')}}</span>
           </li>
         </ul>
         
         <div class="balance">
-          <p>余额：{{availablBalance || 0}} COCOS</p>
-          <router-link class="rental-list" to="/rentallist">租借列表</router-link>
+          <p>{{$t('business.balance')}}：{{availablBalance || 0}} COCOS</p>
+          <router-link class="rental-list" to="/rentallist">{{$t('business.rentalList')}}</router-link>
         </div>
         <div class="GAS-mortgage-title">
-          <p v-if="isMortgage">GAS 抵押</p>
-          <p v-if="!isMortgage">GAS 赎回</p>
+          <p v-if="isMortgage">{{$t('business.GASMortgage')}}</p>
+          <p v-if="!isMortgage">{{$t('business.GasRedemption')}}</p>
           <!-- <ul class="blance">可赎回：100 COCOS</ul> -->
         </div>
         <div class="mortgage-num">
-          <input type="text" placeholder="请输入 COCOS 数量" v-model="mortgageCOCOSAmount">
+          <input type="text" :placeholder="$t('business.putInCOCOS')" v-model="mortgageCOCOSAmount">
           <p>≈ {{conversionGAS || 0}} GAS</p>
         </div>
 
         <div class="receiving-account-bar">
           <div class="title">
             <!-- <ul>接收账号</ul> -->
-            <ul>取回账号</ul>
+            <ul>{{$t('business.receivingAccount')}}</ul>
             <ul class="tab">
               <li @click="changeIsSelf(true)">
                 <img v-if="isSelf" src="../assets/images/circle.png" alt="">
                 <img v-if="!isSelf" src="../assets/images/nochoice.png" alt="">
-                <span>自己</span>
+                <span>{{$t('business.Yourself')}}</span>
               </li>
               <li @click="changeIsSelf(false)">
                 <img v-if="!isSelf" src="../assets/images/circle.png" alt="">
                 <img v-if="isSelf" src="../assets/images/nochoice.png" alt="">
-                <span>他人</span>
+                <span>{{$t('business.Others')}}</span>
               </li>
             </ul>
           </div>
-          <input v-if="!isSelf" class="receiverGASaccount" type="text" v-model="receiverGASaccount" placeholder="请输入">
+          <input v-if="!isSelf" class="receiverGASaccount" type="text" v-model="receiverGASaccount" :placeholder="$t('tipsMessage.common.pleaseEnter')">
         </div>
         
       </div>
 
-      <div class="next" @click="updateCollateralForGasAjas()">下一步</div>
+      <div class="next" :class="{isDisabled: isDisabled}" @click="updateCollateralForGasAjax()">{{updateCollateralForGasText}}</div>
     </div>
   </div>
 </template>
@@ -105,6 +105,8 @@ import { IntegerOrDecimalReg2 } from '../../libs/regular'
 export default {
   data() {
     return {
+      isDisabled: false,
+
       // myCOCOS: '',
       availablBalance: '',
       myAvailableGAS: '',
@@ -126,7 +128,9 @@ export default {
 
       asset_id: '',
       mortgageList: [],
-      beneficiaryAccountNameJson:{}
+      beneficiaryAccountNameJson:{},
+
+      updateCollateralForGasText: ''
     };
   },
   watch: {
@@ -165,13 +169,38 @@ export default {
     this.queryAccountBalancesAjax()
   },
   methods: {
+    updateCollateralForGasTextChange(){
+      let _this = this
+      if (this.isDisabled) {
+        
+        if (this.isMortgage) {
+          // this.updateCollateralForGasText = '抵押中'
+          this.updateCollateralForGasText = this.$t('business.mortgaging')
+        } else {
+          // this.updateCollateralForGasText = '赎回中'
+          this.updateCollateralForGasText = this.$t('business.redeeming')
+        }
+      } else {
+        if (this.isMortgage) {
+          // this.updateCollateralForGasText = '抵押'
+          this.updateCollateralForGasText = this.$t('business.mortgage')
+        } else {
+          // this.updateCollateralForGasText = '赎回'
+          this.updateCollateralForGasText = this.$t('business.redeem')
+        }
+      }
+      
+    },
     changeIsSelf(val){
       this.isSelf = val
     },
     changeIsMortgage(val){
       this.isMortgage = val
+      this.updateCollateralForGasTextChange()
     },
     queryAccountBalancesAjax(){
+      
+      this.updateCollateralForGasTextChange()
       let _this = this
       // _this.myCOCOS = ''
       _this.myAvailableGAS = ''
@@ -248,7 +277,7 @@ export default {
       let _this = this
       if (this.receiveGAS <= 0) {
           Toast({
-            message: '无可领取GAS',
+            message: _this.$t('business.NoGASCouldBeReceived'),
             className: 'toast-style',
             duration: 2000
           });
@@ -259,7 +288,7 @@ export default {
         console.log(res)
         if (res.code == 1) {
           Toast({
-            message: '领取成功',
+            message: _this.$t('business.SuccessfulReceiving'),
             className: 'toast-style',
             duration: 2000
           });
@@ -369,7 +398,14 @@ export default {
               console.log(_this.mortgageAsset)
               
             }
-            _this.mortgageAsset = _this.mortgageAsset.toFixed(5)
+            if (_this.mortgageAsset.toString().indexOf('.') > -1) {
+              if (_this.mortgageAsset.toString().split(".")[1].length > 5) {
+                _this.mortgageAsset = _this.mortgageAsset.toFixed(5)
+              } else {
+                _this.mortgageAsset = _this.mortgageAsset
+              }
+            }
+            
           
           for (let i = 0; i < response.data.result.length; i++) {
             response.data.result[i].collateral_format = (Number(response.data.result[i].collateral)/Math.pow(10,5))
@@ -396,12 +432,13 @@ export default {
     //     _this.queryAccountInfoAjax()
     //   })
     // },
-    updateCollateralForGasAjas(){
+    updateCollateralForGasAjax(){
+      if (this.isDisabled) return false
       let _this = this
       if (_this.mortgageCOCOSAmount <= 0) {
         
         Toast({
-          message: '抵押数量必须大于零',
+          message: _this.$t('business.MortgageQuantityMustBeGreaterThanZero'),
           className: 'toast-style',
           duration: 2000
         });
@@ -420,7 +457,7 @@ export default {
             amount = Number(_this.mortgageCOCOSAmount) + Number(_this.mortgageAssetSelf)
             if (Number(_this.mortgageCOCOSAmount) > Number(_this.availablBalance)) {
               Toast({
-                message: '抵押值不足',
+                message: _this.$t('business.MortgageValueIsNotEnough'),
                 className: 'toast-style',
                 duration: 2000
               });
@@ -430,7 +467,7 @@ export default {
             amount = Number(_this.mortgageAssetSelf) - Number(_this.mortgageCOCOSAmount)
             if (amount < 0) {
               Toast({
-                message: '抵押值不足',
+                message: _this.$t('business.MortgageValueIsNotEnough'),
                 className: 'toast-style',
                 duration: 2000
               });
@@ -447,7 +484,7 @@ export default {
             // 是否是提议
             isPropose: false
           }).then(res=>{
-            console.log('updateCollateralForGasAjas-----------------res')
+            console.log('updateCollateralForGasAjax-----------------res')
             console.log(res)
             if (res.code == 1) {
               // Toast({
@@ -456,15 +493,19 @@ export default {
               //   duration: 2000
               // });
               
-              Indicator.open({
-                spinnerType: "fading-circle"
-              });
               _this.receiverGASaccount = ''
-              MessageBox.alert(_this.isMortgage?'抵押成功':'赎回成功').then(action => {
+              _this.isDisabled = true
+              
+              _this.updateCollateralForGasTextChange()
+              MessageBox.alert('',{
+                title:'',
+                message:_this.isMortgage?_this.$t('business.SuccessfulMortgage'):_this.$t('business.SuccessfulRedemption'),
+                confirmButtonText: _this.$t('common.confirm')
+              }).then(action => {
                 setTimeout(function () {
-                  Indicator.close();
+                  _this.isDisabled = false
                   _this.queryAccountBalancesAjax()
-                }, 1000)
+                }, 2000)
               });
               
             } else {
@@ -483,7 +524,7 @@ export default {
       } else {
         if (!_this.receiverGASaccount) {
           Toast({
-            message: '抵押人账户不能为空',
+            message: _this.$t('business.MortgagorAccountCannotBeEmpty'),
             className: 'toast-style',
             duration: 2000
           });
@@ -529,7 +570,7 @@ export default {
               if (Number(_this.mortgageCOCOSAmount) > Number(targetAccount[0].collateral_format)) {
                 
                 Toast({
-                  message: '抵押值不足',
+                  message: _this.$t('business.MortgageValueIsNotEnough'),
                   className: 'toast-style',
                   duration: 2000
                 });
@@ -540,7 +581,7 @@ export default {
               
             } else {
               Toast({
-                message: '抵押值不足',
+                message: _this.$t('business.MortgageValueIsNotEnough'),
                 className: 'toast-style',
                 duration: 2000
               });
@@ -588,7 +629,7 @@ export default {
             // 是否是提议
             isPropose: false
           }).then(res=>{
-            console.log('updateCollateralForGasAjas-----------------res')
+            console.log('updateCollateralForGasAjax-----------------res')
             console.log(res)
             if (res.code == 1) {
               // Toast({
@@ -600,11 +641,19 @@ export default {
               // _this.queryAccountBalancesAjax()
               
               _this.receiverGASaccount = ''
-              MessageBox.alert(_this.isMortgage?'抵押成功':'赎回成功').then(action => {
+              _this.isDisabled = true
+              _this.updateCollateralForGasTextChange()
+              MessageBox.alert('',{
+                title:'',
+                message:_this.isMortgage?_this.$t('business.SuccessfulMortgage'):_this.$t('business.SuccessfulRedemption'),
+                confirmButtonText: _this.$t('common.confirm')
+              }).then(action => {
                 setTimeout(function () {
+                  _this.isDisabled = false
                   _this.queryAccountBalancesAjax()
-                }, 1000)
+                }, 2000)
               });
+              
             } else {
               
             _this.codeErr(res)
@@ -800,7 +849,6 @@ export default {
 }
 .available-GAS .collect-immediately-btn{
   display: block;
-  width: 0.79rem;
   height: 0.28rem;
   line-height: 0.28rem;
   text-align: center;
@@ -812,6 +860,8 @@ export default {
   position: absolute;
   right: 0.15rem;
   bottom: 0.25rem;
+  padding-left: 0.15rem;
+  padding-right: 0.15rem;
 }
 
 .cocos-container {
@@ -1002,7 +1052,7 @@ export default {
   justify-content: space-between;
 }
 .receiving-account-bar ul.tab{
-  width: 1.2rem;
+  /* width: 1.2rem; */
   height: 0.2rem;
   line-height: 0.2rem;
   display: flex;
@@ -1013,14 +1063,17 @@ export default {
 .receiving-account-bar ul.tab img{
   width: 0.2rem;
   height: 0.2rem;
+  margin-right: 0.03rem;
 }
 .receiving-account-bar ul.tab li {
-  width: 0.53rem;
+  /* width: 0.53rem; */
+  width: auto;
   height: 0.2rem;
   line-height: 0.2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-left: 0.05rem;
 }
 .receiving-account-bar ul.tab li span{
   
@@ -1053,6 +1106,10 @@ export default {
   font-size: 0.16rem;
   font-weight:400;
   color:rgba(255,255,255,1);
+}
+
+.isDisabled{
+  background:rgba(38,42,51,0.4);
 }
 </style>
 

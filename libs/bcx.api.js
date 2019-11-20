@@ -102,6 +102,20 @@ export let browserConnect = function () {
 }
 
 
+// 获取语言
+export let walletLanguage = function () {
+  
+  return new Promise( function (resolve, reject) {
+    console.log('****************************')
+    bcx.walletLanguage().then( res => {
+      console.log('****************************')
+      console.log(res)
+      resolve(res)
+    }).catch( err => {
+      console.log(err)
+    })
+  })
+}
 
 
 // 获取用户信息
