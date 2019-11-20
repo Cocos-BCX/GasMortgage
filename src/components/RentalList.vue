@@ -24,19 +24,19 @@
 
     <div class="mask" v-if="isRedeemPopup">
       <div class="redeem-popup">
-        <p class="title">赎回</p>
+        <p class="title">{{$t('business.redeem')}}</p>
         <div class="redeem-input-bar">
-          <ul class="redeem-head">赎回账号：</ul>
+          <ul class="redeem-head">{{$t('business.redemptionAccount')}}：</ul>
           <ul class="redeem-content">{{currentAccount.beneficiary_account_name}}</ul>
         </div>
         <div class="redeem-input-bar">
-          <ul class="redeem-head">赎回COCOS</ul>
-          <input type="text" placeholder="请输入 COCOS 数量" class="redeem-input" v-model="mortgageCOCOSAmount">
+          <ul class="redeem-head">{{$t('business.redeem')}}COCOS</ul>
+          <input type="text" :placeholder="$t('tipsMessage.common.pleaseEnter')" class="redeem-input" v-model="mortgageCOCOSAmount">
         </div>
 
         <div class="btn-bar">
-          <ul class="cancel" @click="hideRedeemPopup()">取消</ul>
-          <ul class="confirm" @click="updateCollateralForGasAjas()">确认</ul>
+          <ul class="cancel" @click="hideRedeemPopup()">{{$t('common.cancel')}}</ul>
+          <ul class="confirm" @click="updateCollateralForGasAjas()">{{$t('common.confirm')}}</ul>
         </div>
       </div>
     </div>
@@ -142,9 +142,10 @@ export default {
             response.data.result[i].collateral_format = (Number(response.data.result[i].collateral)/Math.pow(10,5))
             _this.queryDataByIdsAjax([response.data.result[i].beneficiary])
           }
-          _this.redeemList = response.data.result.filter(li => {
-            return li.beneficiary != res.account_id
-          })
+          // _this.redeemList = response.data.result.filter(li => {
+          //   return li.beneficiary != res.account_id
+          // })
+          _this.redeemList = response.data.result
         })
       })
     },
@@ -157,7 +158,7 @@ export default {
           if (_this.mortgageCOCOSAmount <= 0) {
             
             Toast({
-              message: '抵押数量必须大于零',
+              message: _this.$t('business.MortgageQuantityMustBeGreaterThanZero'),
               className: 'toast-style',
               duration: 2000
             });
@@ -172,7 +173,7 @@ export default {
           if (Number(_this.collateralFormat) < Number(_this.mortgageCOCOSAmount)) {
             
               Toast({
-                message: '抵押值不足',
+                message: _this.$t('business.MortgageValueIsNotEnough'),
                 className: 'toast-style',
                 duration: 2000
               });
@@ -202,7 +203,11 @@ export default {
               Indicator.open({
                 spinnerType: "fading-circle"
               });
-              MessageBox.alert(_this.isMortgage?'抵押成功':'赎回成功').then(action => {
+              MessageBox.alert('',{
+                title:'',
+                message:_this.isMortgage?_this.$t('business.SuccessfulMortgage'):_this.$t('business.SuccessfulRedemption'),
+                confirmButtonText: _this.$t('common.confirm')
+              }).then(action => {
                 
                 setTimeout(function () {
                   Indicator.close();
@@ -215,7 +220,7 @@ export default {
             } else {
               
               Toast({
-                message:  _this.isMortgage?'抵押失败':'赎回失败',
+                message:  _this.isMortgage?_this.$t('business.FailedToMortgage'):_this.$t('business.FailedToRedeem'),
                 className: 'toast-style',
                 duration: 2000
               });
