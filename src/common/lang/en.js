@@ -5,6 +5,7 @@ export const langEn = {
         redemptionAccount: 'Redemption account',
         available: 'Available',
         GASCouldBeReceived: 'GAS could be received',
+        couldBeReceived: 'Could be received',
         receiveImmediately: 'Receive immediately',
         redeeming: 'Redeeming',
         mortgaging: 'Mortgaging',
