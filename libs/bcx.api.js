@@ -66,7 +66,6 @@ export let initBcx = function () {
     let nodes = response.data.data.filter(( item )=>{
       return item.name == 'Main'
     })
-    console.log(nodes);
       var _configParams={ 
         ws_node_list:[
             {url:nodes[0].ws,name:nodes[0].name},   
