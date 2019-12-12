@@ -5,6 +5,7 @@ export const langZh = {
         redemptionAccount: '赎回账号',
         available: '可用',
         GASCouldBeReceived: '可领取GAS',
+        couldBeReceived: '可领取',
         receiveImmediately: '立即领取',
         redeeming: '赎回中',
         mortgaging: '抵押中',

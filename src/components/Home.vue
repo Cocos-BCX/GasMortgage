@@ -4,10 +4,14 @@
       <div class="available-GAS">
         <p class="title">GAS</p>
         <div class="available-bar">{{$t('business.available')}}：{{myAvailableGAS || 0}} GAS / {{totalGAS || 0}} GAS</div>
-        <p class="receive-title">{{$t('business.GASCouldBeReceived')}}：</p>
+        <p class="receive-title">{{$t('business.couldBeReceived')}}：</p>
         <div class="receive-content">
           <p class="num">{{receiveGAS || 0}}</p>
           <p class="unit">GAS</p>
+        </div>
+        <div class="receive-content">
+          <p class="num">{{receiveCOCOS || 0}}</p>
+          <p class="unit">COCOS</p>
         </div>
         <a href="javascript:void(0);" class="collect-immediately-btn" @click="claimVestingBalanceAjax()">{{$t('business.receiveImmediately')}}</a>
       </div>
@@ -16,14 +20,15 @@
         <div class="title">COCOS</div>
         <div class="redeem-info">
           <div>
-            <p class="tit">{{$t('business.redeeming')}}：</p>
+            
+            <p class="tit">{{$t('business.redeeming')}} <a href="javascript:void(0);" @click="tipsTime()" class="tips">?</a> </p>
             <ul class="receive-content">
               <li class="num">{{redeemAsset || 0}}</li>
               <li class="unit">COCOS</li>
             </ul>
           </div>
           <div>
-            <p class="tit">{{$t('business.mortgaged')}}：</p>
+            <p class="tit">{{$t('business.mortgaged')}}</p>
             <ul class="receive-content">
               <li class="num">{{mortgageAsset || 0}}</li>
               <li class="unit">COCOS</li>
@@ -63,7 +68,8 @@
         <div class="receiving-account-bar">
           <div class="title">
             <!-- <ul>接收账号</ul> -->
-            <ul>{{$t('business.receivingAccount')}}</ul>
+            <ul v-if="isMortgage">接收账号</ul>
+            <ul v-if="!isMortgage">{{$t('business.receivingAccount')}}</ul>
             <ul class="tab">
               <li @click="changeIsSelf(true)">
                 <img v-if="isSelf" src="../assets/images/circle.png" alt="">
@@ -77,7 +83,7 @@
               </li>
             </ul>
           </div>
-          <input v-if="!isSelf" class="receiverGASaccount" type="text" v-model="receiverGASaccount" :placeholder="$t('tipsMessage.common.pleaseEnter')">
+          <input @blur="scrollTop()" v-if="!isSelf" class="receiverGASaccount" type="text" v-model="receiverGASaccount" :placeholder="$t('tipsMessage.common.pleaseEnter')">
         </div>
         
       </div>
@@ -111,6 +117,7 @@ export default {
       availablBalance: '',
       myAvailableGAS: '',
       receiveGAS: '',
+      receiveCOCOS: '',
       totalGAS: '',
 
       redeemAsset: '',
@@ -127,6 +134,7 @@ export default {
       conversionGAS: '',
 
       asset_id: '',
+      asset_id_cocos: '',
       mortgageList: [],
       beneficiaryAccountNameJson:{},
 
@@ -147,8 +155,6 @@ export default {
           } else {
             this.mortgageCOCOSAmountRegular = this.mortgageCOCOSAmount
             queryGas(val).then(res => {
-              console.log('-----queryGas------res------')
-              console.log(res)
               _this.conversionGAS = res.data.amount
             })
           }
@@ -169,6 +175,18 @@ export default {
     this.queryAccountBalancesAjax()
   },
   methods: {
+    scrollTop(){
+      window.scroll(0, 0);
+    },
+    tipsTime(){
+      let _this = this
+
+      Toast({
+        message: '预计24小时完成',
+        className: 'toast-style',
+        duration: 3000
+      });
+    },
     updateCollateralForGasTextChange(){
       let _this = this
       if (this.isDisabled) {
@@ -205,8 +223,6 @@ export default {
       // _this.myCOCOS = ''
       _this.myAvailableGAS = ''
       queryAccountBalances().then( res => {
-        console.log('---------queryAccountBalances-------------')
-        console.log(res)
         if (res.code == 1) {
           // if (res.data.COCOS) {
           //   _this.myCOCOS = res.data.COCOS
@@ -224,9 +240,8 @@ export default {
       _this.totalGAS = 0
       _this.receiveGAS = 0
       _this.asset_id = ''
+      _this.asset_id_cocos = ''
       queryVestingBalance().then( res => {
-        console.log('----------queryVestingBalance------------')
-        console.log(res)
         if (res.code == 1) {
           _this.totalGAS = Number(_this.myAvailableGAS)
           for (let i = 0; i < res.data.length; i++) {
@@ -234,6 +249,13 @@ export default {
               _this.totalGAS = (Number(_this.totalGAS) + Number(res.data[i].return_cash)).toFixed(5)
               _this.receiveGAS = res.data[i].available_balance.amount
               _this.asset_id = res.data[i].id
+              break;
+            }
+          }
+          for (let i = 0; i < res.data.length; i++) {
+            if (res.data[i].type == "cashback_vb") {
+              _this.receiveCOCOS = res.data[i].available_balance.amount
+              _this.asset_id_cocos = res.data[i].id
               break;
             }
           }
@@ -251,8 +273,6 @@ export default {
     queryAccountInfoAjax(){
       let _this = this
       queryAccountInfo().then( res => {
-        console.log('-----------queryAccountInfo--------------')
-        console.log(res)
         
           // 总余额
         let balances = res.data.balances.filter((blance) => {
@@ -279,39 +299,60 @@ export default {
           Toast({
             message: _this.$t('business.NoGASCouldBeReceived'),
             className: 'toast-style',
-            duration: 2000
+            duration: 3000
           });
           return false
       }
       claimVestingBalance(_this.asset_id).then( res=>{
-        console.log('-----res--------claimVestingBalance---------')
-        console.log(res)
         if (res.code == 1) {
-          Toast({
-            message: _this.$t('business.SuccessfulReceiving'),
-            className: 'toast-style',
-            duration: 2000
-          });
+          if (_this.asset_id_cocos) {
+            claimVestingBalance(_this.asset_id_cocos).then( res=>{
+              if (res.code == 1) {
+                Toast({
+                  message: _this.$t('business.SuccessfulReceiving'),
+                  className: 'toast-style',
+                  duration: 3000
+                });
+                setTimeout( function (params) {
+                  _this.queryAccountBalancesAjax()
+                }, 1000)
+              } else {
+                _this.codeErr(res)
+                setTimeout( function (params) {
+                  
+                  _this.queryAccountBalancesAjax()
+                }, 1000)
+              }
+            })
+          } else {
+            Toast({
+              message: _this.$t('business.SuccessfulReceiving'),
+              className: 'toast-style',
+              duration: 3000
+            });
+            setTimeout( function (params) {
+              _this.queryAccountBalancesAjax()
+            }, 1000)
+          }
         } else {
           _this.codeErr(res)
           // console.log(res)
           // Toast({
           //   message: '领取失败',
           //   className: 'toast-style',
-          //   duration: 2000
+          //   duration: 3000
           // });
+          setTimeout( function (params) {
+            _this.queryAccountBalancesAjax()
+          }, 1000)
         }
         
-        _this.queryAccountBalancesAjax()
       })
     },
     queryDataByIdsAjax(){
       let _this = this
-      console.log('==/////////////---------')
         getAccountInfo().then( getAccountInfoResult => {
         return new Promise(function (resolve, reject) {
-      console.log('==/////////getAccountInfoResult////---------')
-          console.log(getAccountInfoResult[cacheKey.accountId])
           queryDataByIds([getAccountInfoResult[cacheKey.accountId]]).then( res => {
               if (res.code == 1) {
                 resolve(res.data[0].cashback_vb)
@@ -322,7 +363,6 @@ export default {
           if (cashback_vb) {
             
             return new Promise(function (resolve, reject) {
-              console.log(cashback_vb)
               queryDataByIds([cashback_vb]).then( res => {
                 if (res.code == 1) {
                   _this.redeemAsset = res.data[0].balance.amount
@@ -345,27 +385,17 @@ export default {
     // 通过用户accountId获取用户名称
     queryDataByIdsAjaxSearch(ids){
       let _this = this
-      console.log('ids')
-      console.log(ids)
       queryDataByIds(ids).then( res => {
-        console.log('----------queryDataByIdsAjaxSearch----------')
-        console.log(res)
-        console.log()
         let accountNameObj = _this.beneficiaryAccountNameJson
         _this.beneficiaryAccountNameJson = {}
         accountNameObj[ids[0]] = res.data[0].name
         _this.beneficiaryAccountNameJson = accountNameObj
-        console.log('================')
-        console.log(_this.beneficiaryAccountNameJson)
       })
     },
     mortgageAjax(){
       // mortgager
       let _this = this
-      console.log('************')
       getAccountInfo().then( res => {
-        console.log('=======getAccountInfo=======')
-        console.log(res)
       let localhost = "http://192.168.15.60:8010/api/v1/mortgage"
         let resUrl = "http://vote.test.cocosbcx.net/api/api/v1/mortgage";
         let formData = {
@@ -375,8 +405,6 @@ export default {
         _this.$axios
         .post(resUrl, formData)
         .then(function(response) {
-          console.log('-------------mortgageAjax----------')
-          console.log(response)
           _this.mortgageList = response.data.result
           _this.mortgageAssetSelf = 0
           _this.mortgageAsset = 0
@@ -392,10 +420,7 @@ export default {
             // 自己抵押给所有人的数量  包括自己
             let myMortgagerlist = response.data.result
             for (let i = 0; i < myMortgagerlist.length; i++) {
-              console.log('Number(myMortgagerlist[i].collateral)/Math.pow(10,5)')
-              console.log(Number(myMortgagerlist[i].collateral)/Math.pow(10,5))
               _this.mortgageAsset += Number(myMortgagerlist[i].collateral)/Math.pow(10,5)
-              console.log(_this.mortgageAsset)
               
             }
             if (_this.mortgageAsset.toString().indexOf('.') > -1) {
@@ -422,16 +447,6 @@ export default {
         console.log(err)
       })
     },
-    // queryGasAjax(){
-    //   let _this = this
-    //   queryGas(10).then(res => {
-    //     console.log('-----queryGas------res------')
-    //     console.log(res)
-    //     // _this.mortgageAssetSelf = (_this.totalGAS/(res.data.amount/10)).toFixed(2)
-        
-    //     _this.queryAccountInfoAjax()
-    //   })
-    // },
     updateCollateralForGasAjax(){
       if (this.isDisabled) return false
       let _this = this
@@ -440,7 +455,7 @@ export default {
         Toast({
           message: _this.$t('business.MortgageQuantityMustBeGreaterThanZero'),
           className: 'toast-style',
-          duration: 2000
+          duration: 3000
         });
         return false
       }
@@ -450,8 +465,6 @@ export default {
             resolve(getAccountInfoResult)
           })
         }).then( getAccountInfoResult=>{
-          console.log('-------getAccountInfoResult---------')
-          console.log(getAccountInfoResult)
           let amount = 0
           if (_this.isMortgage) {
             amount = Number(_this.mortgageCOCOSAmount) + Number(_this.mortgageAssetSelf)
@@ -459,7 +472,7 @@ export default {
               Toast({
                 message: _this.$t('business.MortgageValueIsNotEnough'),
                 className: 'toast-style',
-                duration: 2000
+                duration: 3000
               });
               return false
             }
@@ -469,7 +482,7 @@ export default {
               Toast({
                 message: _this.$t('business.MortgageValueIsNotEnough'),
                 className: 'toast-style',
-                duration: 2000
+                duration: 3000
               });
               return false
             }
@@ -484,13 +497,11 @@ export default {
             // 是否是提议
             isPropose: false
           }).then(res=>{
-            console.log('updateCollateralForGasAjax-----------------res')
-            console.log(res)
             if (res.code == 1) {
               // Toast({
               //   message: _this.isMortgage?'抵押成功':'赎回成功',
               //   className: 'toast-style',
-              //   duration: 2000
+              //   duration: 3000
               // });
               
               _this.receiverGASaccount = ''
@@ -515,7 +526,7 @@ export default {
               // Toast({
               //   message: '失败',
               //   className: 'toast-style',
-              //   duration: 2000
+              //   duration: 3000
               // });
               // _this.queryAccountBalancesAjax()
             }
@@ -526,7 +537,7 @@ export default {
           Toast({
             message: _this.$t('business.MortgagorAccountCannotBeEmpty'),
             className: 'toast-style',
-            duration: 2000
+            duration: 3000
           });
           return false
         }
@@ -536,13 +547,8 @@ export default {
           })
         }).then( getAccountInfoResult=>{
           // mortgageCOCOSAmount
-          console.log('-------getAccountInfoResult---------')
-          console.log(getAccountInfoResult)
-          console.log(_this.beneficiaryAccountNameJson)
           let ifHave = false
           let amount = 0
-          console.log(_this.mortgageList)
-          console.log(_this.beneficiaryAccountNameJson)
           let targetAccountId = ''
           let ifHove = false
           for (const key in _this.beneficiaryAccountNameJson) {
@@ -572,7 +578,7 @@ export default {
                 Toast({
                   message: _this.$t('business.MortgageValueIsNotEnough'),
                   className: 'toast-style',
-                  duration: 2000
+                  duration: 3000
                 });
                 return false
               } else {
@@ -583,7 +589,7 @@ export default {
               Toast({
                 message: _this.$t('business.MortgageValueIsNotEnough'),
                 className: 'toast-style',
-                duration: 2000
+                duration: 3000
               });
               return false
             }
@@ -614,7 +620,7 @@ export default {
           //     Toast({
           //       message: '抵押值不足',
           //       className: 'toast-style',
-          //       duration: 2000
+          //       duration: 3000
           //     });
           //     return false
           //   }
@@ -629,13 +635,11 @@ export default {
             // 是否是提议
             isPropose: false
           }).then(res=>{
-            console.log('updateCollateralForGasAjax-----------------res')
-            console.log(res)
             if (res.code == 1) {
               // Toast({
               //   message: _this.isMortgage?'抵押成功':'赎回成功',
               //   className: 'toast-style',
-              //   duration: 2000
+              //   duration: 3000
               // });
               // _this.receiverGASaccount = ''
               // _this.queryAccountBalancesAjax()
@@ -660,7 +664,7 @@ export default {
               // Toast({
               //   message: '失败',
               //   className: 'toast-style',
-              //   duration: 2000
+              //   duration: 3000
               // });
               // _this.receiverGASaccount = ''
               // setTimeout( function () {
@@ -674,17 +678,16 @@ export default {
     },
     codeErr(res){
       let _this = this;
-          console.log('===')
       if (res.code == 112) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('tipsMessage.business.importAccountPrivateKey'),
             className: 'toast-style',
           })
         return false
       } else if (res.code == 105) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common[6]'),
             className: 'toast-style',
           })
@@ -695,77 +698,77 @@ export default {
         if (res.message.indexOf('Parameter is missing') > -1) {
           
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common[101]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("world view name can't start whith a digit")>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.creatWorldView[3]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("Please login first")>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common[114]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf('Insufficient Balance') > -1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common.InsufficientBalance'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf('You\'re not a nh asset creator')>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.creatWorldView[2]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("world view name can't start whith a digit")>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.creatWorldView[3]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("Most likely a uniqueness constraint is violated")>-1) {
           
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.creatWorldView[0]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("missing required owner authority")>-1) {
           
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.creatWorldView[0]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("locked->value >= 0")>-1) {
           
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('tipsMessage.business.lockedGreaterThanValue'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("Wrong password")>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common[6]'),
             className: 'toast-style',
           })
           
         } else if (res.message.indexOf("Account does not exist")>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: '账户不存在',
             className: 'toast-style',
           })
         } else {
             Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common[4]'),
             className: 'toast-style',
           })
@@ -785,11 +788,12 @@ export default {
 <style scoped>
 .available-GAS{
   width: 100%;
-  height: 1.55rem;
+  /* height: 1.55rem; */
   background: #fff;
   border-radius: 0.08rem;
   padding-left: 0.15rem;
   padding-right: 0.15rem;
+  padding-bottom: 0.1rem;
   margin-top: 0.15rem;
   position: relative;
 }
@@ -834,7 +838,7 @@ export default {
 }
 .available-GAS .receive-content .num{
   height: 0.24rem;
-  font-size: 0.2rem;
+  font-size: 0.16rem;
   font-weight:bold;
   color:rgba(38,42,51,1);
   line-height: 0.24rem;
@@ -859,7 +863,7 @@ export default {
   color:rgba(0,122,255,1);
   position: absolute;
   right: 0.15rem;
-  bottom: 0.25rem;
+  bottom: 0.15rem;
   padding-left: 0.15rem;
   padding-right: 0.15rem;
 }
@@ -1110,6 +1114,17 @@ export default {
 
 .isDisabled{
   background:rgba(38,42,51,0.4);
+}
+.tips{
+  width: 0.12rem;
+  height: 0.12rem;
+  line-height: 0.12rem;
+  color: rgba(165,169,177,1);
+  font-size: 0.12rem;
+  border: 1px solid rgba(165,169,177,1);
+  display: inline-block;
+  border-radius: 50%;
+  text-align: center;
 }
 </style>
 

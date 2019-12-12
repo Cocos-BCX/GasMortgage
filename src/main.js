@@ -17,10 +17,10 @@ Vue.use(VueI18n);
 Vue.use(Indicator);
 Vue.component(Popup.name, Popup);
 Vue.component(Loadmore.name, Loadmore);
+initRootFontSize();
 
 initBcx()
 browserConnect().then( res => {
-  initRootFontSize();
 
   setTimeout( function (params) {
 
