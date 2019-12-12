@@ -3,27 +3,32 @@
     <div class="center-container">
       <div class="available-GAS">
         <p class="title">GAS</p>
-        <div class="available-bar">可用：{{myAvailableGAS || 0}} GAS / {{totalGAS || 0}} GAS</div>
-        <p class="receive-title">可领取GAS：</p>
+        <div class="available-bar">{{$t('business.available')}}：{{myAvailableGAS || 0}} GAS / {{totalGAS || 0}} GAS</div>
+        <p class="receive-title">{{$t('business.couldBeReceived')}}：</p>
         <div class="receive-content">
           <p class="num">{{receiveGAS || 0}}</p>
           <p class="unit">GAS</p>
         </div>
-        <a href="javascript:void(0);" class="collect-immediately-btn" @click="claimVestingBalanceAjax()">立即领取</a>
+        <div class="receive-content">
+          <p class="num">{{receiveCOCOS || 0}}</p>
+          <p class="unit">COCOS</p>
+        </div>
+        <a href="javascript:void(0);" class="collect-immediately-btn" @click="claimVestingBalanceAjax()">{{$t('business.receiveImmediately')}}</a>
       </div>
 
       <div class="cocos-container">
         <div class="title">COCOS</div>
         <div class="redeem-info">
           <div>
-            <p class="tit">赎回中：</p>
+            
+            <p class="tit">{{$t('business.redeeming')}} <a href="javascript:void(0);" @click="tipsTime()" class="tips">?</a> </p>
             <ul class="receive-content">
               <li class="num">{{redeemAsset || 0}}</li>
               <li class="unit">COCOS</li>
             </ul>
           </div>
           <div>
-            <p class="tit">已抵押：</p>
+            <p class="tit">{{$t('business.mortgaged')}}</p>
             <ul class="receive-content">
               <li class="num">{{mortgageAsset || 0}}</li>
               <li class="unit">COCOS</li>
@@ -37,52 +42,53 @@
           <li @click="changeIsMortgage(true)">
             <img v-if="isMortgage" src="../assets/images/circle.png" alt="">
             <img v-if="!isMortgage" src="../assets/images/nochoice.png" alt="">
-            <span>抵押</span>
+            <span>{{$t('business.mortgage')}}</span>
           </li>
           <li @click="changeIsMortgage(false)">
             <img v-if="!isMortgage" src="../assets/images/circle.png" alt="">
             <img v-if="isMortgage" src="../assets/images/nochoice.png" alt="">
-            <span>赎回</span>
+            <span>{{$t('business.redeem')}}</span>
           </li>
         </ul>
         
         <div class="balance">
-          <p>余额：{{availablBalance || 0}} COCOS</p>
-          <router-link class="rental-list" to="/rentallist">租借列表</router-link>
+          <p>{{$t('business.balance')}}：{{availablBalance || 0}} COCOS</p>
+          <router-link class="rental-list" to="/rentallist">{{$t('business.rentalList')}}</router-link>
         </div>
         <div class="GAS-mortgage-title">
-          <p v-if="isMortgage">GAS 抵押</p>
-          <p v-if="!isMortgage">GAS 赎回</p>
+          <p v-if="isMortgage">{{$t('business.GASMortgage')}}</p>
+          <p v-if="!isMortgage">{{$t('business.GasRedemption')}}</p>
           <!-- <ul class="blance">可赎回：100 COCOS</ul> -->
         </div>
         <div class="mortgage-num">
-          <input type="text" placeholder="请输入 COCOS 数量" v-model="mortgageCOCOSAmount">
+          <input type="text" :placeholder="$t('business.putInCOCOS')" v-model="mortgageCOCOSAmount">
           <p>≈ {{conversionGAS || 0}} GAS</p>
         </div>
 
         <div class="receiving-account-bar">
           <div class="title">
             <!-- <ul>接收账号</ul> -->
-            <ul>取回账号</ul>
+            <ul v-if="isMortgage">接收账号</ul>
+            <ul v-if="!isMortgage">{{$t('business.receivingAccount')}}</ul>
             <ul class="tab">
               <li @click="changeIsSelf(true)">
                 <img v-if="isSelf" src="../assets/images/circle.png" alt="">
                 <img v-if="!isSelf" src="../assets/images/nochoice.png" alt="">
-                <span>自己</span>
+                <span>{{$t('business.Yourself')}}</span>
               </li>
               <li @click="changeIsSelf(false)">
                 <img v-if="!isSelf" src="../assets/images/circle.png" alt="">
                 <img v-if="isSelf" src="../assets/images/nochoice.png" alt="">
-                <span>他人</span>
+                <span>{{$t('business.Others')}}</span>
               </li>
             </ul>
           </div>
-          <input v-if="!isSelf" class="receiverGASaccount" type="text" v-model="receiverGASaccount" placeholder="请输入">
+          <input @blur="scrollTop()" v-if="!isSelf" class="receiverGASaccount" type="text" v-model="receiverGASaccount" :placeholder="$t('tipsMessage.common.pleaseEnter')">
         </div>
         
       </div>
 
-      <div class="next" @click="updateCollateralForGasAjas()">下一步</div>
+      <div class="next" :class="{isDisabled: isDisabled}" @click="updateCollateralForGasAjax()">{{updateCollateralForGasText}}</div>
     </div>
   </div>
 </template>
@@ -105,10 +111,13 @@ import { IntegerOrDecimalReg2 } from '../../libs/regular'
 export default {
   data() {
     return {
+      isDisabled: false,
+
       // myCOCOS: '',
       availablBalance: '',
       myAvailableGAS: '',
       receiveGAS: '',
+      receiveCOCOS: '',
       totalGAS: '',
 
       redeemAsset: '',
@@ -125,8 +134,11 @@ export default {
       conversionGAS: '',
 
       asset_id: '',
+      asset_id_cocos: '',
       mortgageList: [],
-      beneficiaryAccountNameJson:{}
+      beneficiaryAccountNameJson:{},
+
+      updateCollateralForGasText: ''
     };
   },
   watch: {
@@ -143,8 +155,6 @@ export default {
           } else {
             this.mortgageCOCOSAmountRegular = this.mortgageCOCOSAmount
             queryGas(val).then(res => {
-              console.log('-----queryGas------res------')
-              console.log(res)
               _this.conversionGAS = res.data.amount
             })
           }
@@ -165,19 +175,54 @@ export default {
     this.queryAccountBalancesAjax()
   },
   methods: {
+    scrollTop(){
+      window.scroll(0, 0);
+    },
+    tipsTime(){
+      let _this = this
+
+      Toast({
+        message: '预计24小时完成',
+        className: 'toast-style',
+        duration: 3000
+      });
+    },
+    updateCollateralForGasTextChange(){
+      let _this = this
+      if (this.isDisabled) {
+        
+        if (this.isMortgage) {
+          // this.updateCollateralForGasText = '抵押中'
+          this.updateCollateralForGasText = this.$t('business.mortgaging')
+        } else {
+          // this.updateCollateralForGasText = '赎回中'
+          this.updateCollateralForGasText = this.$t('business.redeeming')
+        }
+      } else {
+        if (this.isMortgage) {
+          // this.updateCollateralForGasText = '抵押'
+          this.updateCollateralForGasText = this.$t('business.mortgage')
+        } else {
+          // this.updateCollateralForGasText = '赎回'
+          this.updateCollateralForGasText = this.$t('business.redeem')
+        }
+      }
+      
+    },
     changeIsSelf(val){
       this.isSelf = val
     },
     changeIsMortgage(val){
       this.isMortgage = val
+      this.updateCollateralForGasTextChange()
     },
     queryAccountBalancesAjax(){
+      
+      this.updateCollateralForGasTextChange()
       let _this = this
       // _this.myCOCOS = ''
       _this.myAvailableGAS = ''
       queryAccountBalances().then( res => {
-        console.log('---------queryAccountBalances-------------')
-        console.log(res)
         if (res.code == 1) {
           // if (res.data.COCOS) {
           //   _this.myCOCOS = res.data.COCOS
@@ -195,9 +240,8 @@ export default {
       _this.totalGAS = 0
       _this.receiveGAS = 0
       _this.asset_id = ''
+      _this.asset_id_cocos = ''
       queryVestingBalance().then( res => {
-        console.log('----------queryVestingBalance------------')
-        console.log(res)
         if (res.code == 1) {
           _this.totalGAS = Number(_this.myAvailableGAS)
           for (let i = 0; i < res.data.length; i++) {
@@ -205,6 +249,13 @@ export default {
               _this.totalGAS = (Number(_this.totalGAS) + Number(res.data[i].return_cash)).toFixed(5)
               _this.receiveGAS = res.data[i].available_balance.amount
               _this.asset_id = res.data[i].id
+              break;
+            }
+          }
+          for (let i = 0; i < res.data.length; i++) {
+            if (res.data[i].type == "cashback_vb") {
+              _this.receiveCOCOS = res.data[i].available_balance.amount
+              _this.asset_id_cocos = res.data[i].id
               break;
             }
           }
@@ -222,8 +273,6 @@ export default {
     queryAccountInfoAjax(){
       let _this = this
       queryAccountInfo().then( res => {
-        console.log('-----------queryAccountInfo--------------')
-        console.log(res)
         
           // 总余额
         let balances = res.data.balances.filter((blance) => {
@@ -248,41 +297,62 @@ export default {
       let _this = this
       if (this.receiveGAS <= 0) {
           Toast({
-            message: '无可领取GAS',
+            message: _this.$t('business.NoGASCouldBeReceived'),
             className: 'toast-style',
-            duration: 2000
+            duration: 3000
           });
           return false
       }
       claimVestingBalance(_this.asset_id).then( res=>{
-        console.log('-----res--------claimVestingBalance---------')
-        console.log(res)
         if (res.code == 1) {
-          Toast({
-            message: '领取成功',
-            className: 'toast-style',
-            duration: 2000
-          });
+          if (_this.asset_id_cocos) {
+            claimVestingBalance(_this.asset_id_cocos).then( res=>{
+              if (res.code == 1) {
+                Toast({
+                  message: _this.$t('business.SuccessfulReceiving'),
+                  className: 'toast-style',
+                  duration: 3000
+                });
+                setTimeout( function (params) {
+                  _this.queryAccountBalancesAjax()
+                }, 1000)
+              } else {
+                _this.codeErr(res)
+                setTimeout( function (params) {
+                  
+                  _this.queryAccountBalancesAjax()
+                }, 1000)
+              }
+            })
+          } else {
+            Toast({
+              message: _this.$t('business.SuccessfulReceiving'),
+              className: 'toast-style',
+              duration: 3000
+            });
+            setTimeout( function (params) {
+              _this.queryAccountBalancesAjax()
+            }, 1000)
+          }
         } else {
           _this.codeErr(res)
           // console.log(res)
           // Toast({
           //   message: '领取失败',
           //   className: 'toast-style',
-          //   duration: 2000
+          //   duration: 3000
           // });
+          setTimeout( function (params) {
+            _this.queryAccountBalancesAjax()
+          }, 1000)
         }
         
-        _this.queryAccountBalancesAjax()
       })
     },
     queryDataByIdsAjax(){
       let _this = this
-      console.log('==/////////////---------')
         getAccountInfo().then( getAccountInfoResult => {
         return new Promise(function (resolve, reject) {
-      console.log('==/////////getAccountInfoResult////---------')
-          console.log(getAccountInfoResult[cacheKey.accountId])
           queryDataByIds([getAccountInfoResult[cacheKey.accountId]]).then( res => {
               if (res.code == 1) {
                 resolve(res.data[0].cashback_vb)
@@ -293,7 +363,6 @@ export default {
           if (cashback_vb) {
             
             return new Promise(function (resolve, reject) {
-              console.log(cashback_vb)
               queryDataByIds([cashback_vb]).then( res => {
                 if (res.code == 1) {
                   _this.redeemAsset = res.data[0].balance.amount
@@ -316,27 +385,17 @@ export default {
     // 通过用户accountId获取用户名称
     queryDataByIdsAjaxSearch(ids){
       let _this = this
-      console.log('ids')
-      console.log(ids)
       queryDataByIds(ids).then( res => {
-        console.log('----------queryDataByIdsAjaxSearch----------')
-        console.log(res)
-        console.log()
         let accountNameObj = _this.beneficiaryAccountNameJson
         _this.beneficiaryAccountNameJson = {}
         accountNameObj[ids[0]] = res.data[0].name
         _this.beneficiaryAccountNameJson = accountNameObj
-        console.log('================')
-        console.log(_this.beneficiaryAccountNameJson)
       })
     },
     mortgageAjax(){
       // mortgager
       let _this = this
-      console.log('************')
       getAccountInfo().then( res => {
-        console.log('=======getAccountInfo=======')
-        console.log(res)
       let localhost = "http://192.168.15.60:8010/api/v1/mortgage"
         let resUrl = "http://vote.test.cocosbcx.net/api/api/v1/mortgage";
         let formData = {
@@ -346,8 +405,6 @@ export default {
         _this.$axios
         .post(resUrl, formData)
         .then(function(response) {
-          console.log('-------------mortgageAjax----------')
-          console.log(response)
           _this.mortgageList = response.data.result
           _this.mortgageAssetSelf = 0
           _this.mortgageAsset = 0
@@ -363,13 +420,17 @@ export default {
             // 自己抵押给所有人的数量  包括自己
             let myMortgagerlist = response.data.result
             for (let i = 0; i < myMortgagerlist.length; i++) {
-              console.log('Number(myMortgagerlist[i].collateral)/Math.pow(10,5)')
-              console.log(Number(myMortgagerlist[i].collateral)/Math.pow(10,5))
               _this.mortgageAsset += Number(myMortgagerlist[i].collateral)/Math.pow(10,5)
-              console.log(_this.mortgageAsset)
               
             }
-            _this.mortgageAsset = _this.mortgageAsset.toFixed(5)
+            if (_this.mortgageAsset.toString().indexOf('.') > -1) {
+              if (_this.mortgageAsset.toString().split(".")[1].length > 5) {
+                _this.mortgageAsset = _this.mortgageAsset.toFixed(5)
+              } else {
+                _this.mortgageAsset = _this.mortgageAsset
+              }
+            }
+            
           
           for (let i = 0; i < response.data.result.length; i++) {
             response.data.result[i].collateral_format = (Number(response.data.result[i].collateral)/Math.pow(10,5))
@@ -386,24 +447,15 @@ export default {
         console.log(err)
       })
     },
-    // queryGasAjax(){
-    //   let _this = this
-    //   queryGas(10).then(res => {
-    //     console.log('-----queryGas------res------')
-    //     console.log(res)
-    //     // _this.mortgageAssetSelf = (_this.totalGAS/(res.data.amount/10)).toFixed(2)
-        
-    //     _this.queryAccountInfoAjax()
-    //   })
-    // },
-    updateCollateralForGasAjas(){
+    updateCollateralForGasAjax(){
+      if (this.isDisabled) return false
       let _this = this
       if (_this.mortgageCOCOSAmount <= 0) {
         
         Toast({
-          message: '抵押数量必须大于零',
+          message: _this.$t('business.MortgageQuantityMustBeGreaterThanZero'),
           className: 'toast-style',
-          duration: 2000
+          duration: 3000
         });
         return false
       }
@@ -413,16 +465,14 @@ export default {
             resolve(getAccountInfoResult)
           })
         }).then( getAccountInfoResult=>{
-          console.log('-------getAccountInfoResult---------')
-          console.log(getAccountInfoResult)
           let amount = 0
           if (_this.isMortgage) {
             amount = Number(_this.mortgageCOCOSAmount) + Number(_this.mortgageAssetSelf)
             if (Number(_this.mortgageCOCOSAmount) > Number(_this.availablBalance)) {
               Toast({
-                message: '抵押值不足',
+                message: _this.$t('business.MortgageValueIsNotEnough'),
                 className: 'toast-style',
-                duration: 2000
+                duration: 3000
               });
               return false
             }
@@ -430,9 +480,9 @@ export default {
             amount = Number(_this.mortgageAssetSelf) - Number(_this.mortgageCOCOSAmount)
             if (amount < 0) {
               Toast({
-                message: '抵押值不足',
+                message: _this.$t('business.MortgageValueIsNotEnough'),
                 className: 'toast-style',
-                duration: 2000
+                duration: 3000
               });
               return false
             }
@@ -447,24 +497,26 @@ export default {
             // 是否是提议
             isPropose: false
           }).then(res=>{
-            console.log('updateCollateralForGasAjas-----------------res')
-            console.log(res)
             if (res.code == 1) {
               // Toast({
               //   message: _this.isMortgage?'抵押成功':'赎回成功',
               //   className: 'toast-style',
-              //   duration: 2000
+              //   duration: 3000
               // });
               
-              Indicator.open({
-                spinnerType: "fading-circle"
-              });
               _this.receiverGASaccount = ''
-              MessageBox.alert(_this.isMortgage?'抵押成功':'赎回成功').then(action => {
+              _this.isDisabled = true
+              
+              _this.updateCollateralForGasTextChange()
+              MessageBox.alert('',{
+                title:'',
+                message:_this.isMortgage?_this.$t('business.SuccessfulMortgage'):_this.$t('business.SuccessfulRedemption'),
+                confirmButtonText: _this.$t('common.confirm')
+              }).then(action => {
                 setTimeout(function () {
-                  Indicator.close();
+                  _this.isDisabled = false
                   _this.queryAccountBalancesAjax()
-                }, 1000)
+                }, 2000)
               });
               
             } else {
@@ -474,7 +526,7 @@ export default {
               // Toast({
               //   message: '失败',
               //   className: 'toast-style',
-              //   duration: 2000
+              //   duration: 3000
               // });
               // _this.queryAccountBalancesAjax()
             }
@@ -483,9 +535,9 @@ export default {
       } else {
         if (!_this.receiverGASaccount) {
           Toast({
-            message: '抵押人账户不能为空',
+            message: _this.$t('business.MortgagorAccountCannotBeEmpty'),
             className: 'toast-style',
-            duration: 2000
+            duration: 3000
           });
           return false
         }
@@ -495,13 +547,8 @@ export default {
           })
         }).then( getAccountInfoResult=>{
           // mortgageCOCOSAmount
-          console.log('-------getAccountInfoResult---------')
-          console.log(getAccountInfoResult)
-          console.log(_this.beneficiaryAccountNameJson)
           let ifHave = false
           let amount = 0
-          console.log(_this.mortgageList)
-          console.log(_this.beneficiaryAccountNameJson)
           let targetAccountId = ''
           let ifHove = false
           for (const key in _this.beneficiaryAccountNameJson) {
@@ -529,9 +576,9 @@ export default {
               if (Number(_this.mortgageCOCOSAmount) > Number(targetAccount[0].collateral_format)) {
                 
                 Toast({
-                  message: '抵押值不足',
+                  message: _this.$t('business.MortgageValueIsNotEnough'),
                   className: 'toast-style',
-                  duration: 2000
+                  duration: 3000
                 });
                 return false
               } else {
@@ -540,9 +587,9 @@ export default {
               
             } else {
               Toast({
-                message: '抵押值不足',
+                message: _this.$t('business.MortgageValueIsNotEnough'),
                 className: 'toast-style',
-                duration: 2000
+                duration: 3000
               });
               return false
             }
@@ -573,7 +620,7 @@ export default {
           //     Toast({
           //       message: '抵押值不足',
           //       className: 'toast-style',
-          //       duration: 2000
+          //       duration: 3000
           //     });
           //     return false
           //   }
@@ -588,30 +635,36 @@ export default {
             // 是否是提议
             isPropose: false
           }).then(res=>{
-            console.log('updateCollateralForGasAjas-----------------res')
-            console.log(res)
             if (res.code == 1) {
               // Toast({
               //   message: _this.isMortgage?'抵押成功':'赎回成功',
               //   className: 'toast-style',
-              //   duration: 2000
+              //   duration: 3000
               // });
               // _this.receiverGASaccount = ''
               // _this.queryAccountBalancesAjax()
               
               _this.receiverGASaccount = ''
-              MessageBox.alert(_this.isMortgage?'抵押成功':'赎回成功').then(action => {
+              _this.isDisabled = true
+              _this.updateCollateralForGasTextChange()
+              MessageBox.alert('',{
+                title:'',
+                message:_this.isMortgage?_this.$t('business.SuccessfulMortgage'):_this.$t('business.SuccessfulRedemption'),
+                confirmButtonText: _this.$t('common.confirm')
+              }).then(action => {
                 setTimeout(function () {
+                  _this.isDisabled = false
                   _this.queryAccountBalancesAjax()
-                }, 1000)
+                }, 2000)
               });
+              
             } else {
               
             _this.codeErr(res)
               // Toast({
               //   message: '失败',
               //   className: 'toast-style',
-              //   duration: 2000
+              //   duration: 3000
               // });
               // _this.receiverGASaccount = ''
               // setTimeout( function () {
@@ -625,17 +678,16 @@ export default {
     },
     codeErr(res){
       let _this = this;
-          console.log('===')
       if (res.code == 112) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('tipsMessage.business.importAccountPrivateKey'),
             className: 'toast-style',
           })
         return false
       } else if (res.code == 105) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common[6]'),
             className: 'toast-style',
           })
@@ -646,77 +698,77 @@ export default {
         if (res.message.indexOf('Parameter is missing') > -1) {
           
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common[101]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("world view name can't start whith a digit")>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.creatWorldView[3]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("Please login first")>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common[114]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf('Insufficient Balance') > -1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common.InsufficientBalance'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf('You\'re not a nh asset creator')>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.creatWorldView[2]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("world view name can't start whith a digit")>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.creatWorldView[3]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("Most likely a uniqueness constraint is violated")>-1) {
           
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.creatWorldView[0]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("missing required owner authority")>-1) {
           
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.creatWorldView[0]'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("locked->value >= 0")>-1) {
           
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('tipsMessage.business.lockedGreaterThanValue'),
             className: 'toast-style',
           })
         } else if (res.message.indexOf("Wrong password")>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common[6]'),
             className: 'toast-style',
           })
           
         } else if (res.message.indexOf("Account does not exist")>-1) {
           Toast({
-            duration: 2000,
+            duration: 3000,
             message: '账户不存在',
             className: 'toast-style',
           })
         } else {
             Toast({
-            duration: 2000,
+            duration: 3000,
             message: _this.$t('interFaceMessage.common[4]'),
             className: 'toast-style',
           })
@@ -736,11 +788,12 @@ export default {
 <style scoped>
 .available-GAS{
   width: 100%;
-  height: 1.55rem;
+  /* height: 1.55rem; */
   background: #fff;
   border-radius: 0.08rem;
   padding-left: 0.15rem;
   padding-right: 0.15rem;
+  padding-bottom: 0.1rem;
   margin-top: 0.15rem;
   position: relative;
 }
@@ -785,7 +838,7 @@ export default {
 }
 .available-GAS .receive-content .num{
   height: 0.24rem;
-  font-size: 0.2rem;
+  font-size: 0.16rem;
   font-weight:bold;
   color:rgba(38,42,51,1);
   line-height: 0.24rem;
@@ -800,7 +853,6 @@ export default {
 }
 .available-GAS .collect-immediately-btn{
   display: block;
-  width: 0.79rem;
   height: 0.28rem;
   line-height: 0.28rem;
   text-align: center;
@@ -811,7 +863,9 @@ export default {
   color:rgba(0,122,255,1);
   position: absolute;
   right: 0.15rem;
-  bottom: 0.25rem;
+  bottom: 0.15rem;
+  padding-left: 0.15rem;
+  padding-right: 0.15rem;
 }
 
 .cocos-container {
@@ -1002,7 +1056,7 @@ export default {
   justify-content: space-between;
 }
 .receiving-account-bar ul.tab{
-  width: 1.2rem;
+  /* width: 1.2rem; */
   height: 0.2rem;
   line-height: 0.2rem;
   display: flex;
@@ -1013,14 +1067,17 @@ export default {
 .receiving-account-bar ul.tab img{
   width: 0.2rem;
   height: 0.2rem;
+  margin-right: 0.03rem;
 }
 .receiving-account-bar ul.tab li {
-  width: 0.53rem;
+  /* width: 0.53rem; */
+  width: auto;
   height: 0.2rem;
   line-height: 0.2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-left: 0.05rem;
 }
 .receiving-account-bar ul.tab li span{
   
@@ -1053,6 +1110,21 @@ export default {
   font-size: 0.16rem;
   font-weight:400;
   color:rgba(255,255,255,1);
+}
+
+.isDisabled{
+  background:rgba(38,42,51,0.4);
+}
+.tips{
+  width: 0.12rem;
+  height: 0.12rem;
+  line-height: 0.12rem;
+  color: rgba(165,169,177,1);
+  font-size: 0.12rem;
+  border: 1px solid rgba(165,169,177,1);
+  display: inline-block;
+  border-radius: 50%;
+  text-align: center;
 }
 </style>
 
