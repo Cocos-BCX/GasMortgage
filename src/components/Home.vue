@@ -397,15 +397,17 @@ export default {
       let _this = this
       getAccountInfo().then( res => {
       let localhost = "http://192.168.15.60:8010/api/v1/mortgage"
-        let resUrl = "http://vote.test.cocosbcx.net/api/api/v1/mortgage";
+        let resUrl = "https://vote.cocosbcx.net/api/api/v1/mortgage";
         let formData = {
           account_id: res.account_id,
           type: 'mortgager'
         }
-            console.log(res.account_id)
+        console.log(res.account_id)
         _this.$axios
         .post(resUrl, formData)
         .then(function(response) {
+          console.log('response')
+          console.log(response)
           _this.mortgageList = response.data.result
           _this.mortgageAssetSelf = 0
           _this.mortgageAsset = 0
