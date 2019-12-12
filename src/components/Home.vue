@@ -402,6 +402,7 @@ export default {
           account_id: res.account_id,
           type: 'mortgager'
         }
+            console.log(res.account_id)
         _this.$axios
         .post(resUrl, formData)
         .then(function(response) {
@@ -415,7 +416,13 @@ export default {
             let myMortgager = response.data.result.filter((li) => {
               return li.beneficiary == res.account_id
             })[0]
-            _this.mortgageAssetSelf = (Number(myMortgager.collateral)/Math.pow(10,5))
+            if (myMortgager) {
+              
+              console.log("=============myMortgager==============")
+              console.log(response.data.result)
+              console.log(res.account_id)
+              _this.mortgageAssetSelf = (Number(myMortgager.collateral)/Math.pow(10,5))
+            }
 
             // 自己抵押给所有人的数量  包括自己
             let myMortgagerlist = response.data.result
