@@ -418,9 +418,6 @@ export default {
             })[0]
             if (myMortgager) {
               
-              console.log("=============myMortgager==============")
-              console.log(response.data.result)
-              console.log(res.account_id)
               _this.mortgageAssetSelf = (Number(myMortgager.collateral)/Math.pow(10,5))
             }
 
