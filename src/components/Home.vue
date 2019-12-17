@@ -304,6 +304,9 @@ export default {
           return false
       }
       claimVestingBalance(_this.asset_id).then( res=>{
+        console.log("====claimVestingBalance=======res=========")
+        console.log(_this.asset_id)
+        console.log(res)
         if (res.code == 1) {
           if (_this.asset_id_cocos) {
             claimVestingBalance(_this.asset_id_cocos).then( res=>{

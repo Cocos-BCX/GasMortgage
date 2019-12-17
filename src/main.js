@@ -20,7 +20,7 @@ Vue.component(Loadmore.name, Loadmore);
 initRootFontSize();
 
 initBcx().then( initBcxRes => {
-  console.log("=initBcxRes=")
+  console.log("=initBcxRes= 2019-12-17")
   console.log(initBcxRes)
   
   browserConnect().then( browserConnectRes => {
