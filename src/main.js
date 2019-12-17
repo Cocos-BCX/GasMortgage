@@ -19,20 +19,21 @@ Vue.component(Popup.name, Popup);
 Vue.component(Loadmore.name, Loadmore);
 initRootFontSize();
 
-initBcx()
-browserConnect().then( res => {
+initBcx().then( initBcxRes => {
+  console.log("=initBcxRes= 2019-12-17")
+  console.log(initBcxRes)
+  
+  browserConnect().then( browserConnectRes => {
 
-  setTimeout( function (params) {
-
+    console.log("=======")
+    console.log(browserConnectRes)
     walletLanguage().then( res => {
 
       let lang = 'zh'
       if (res.data == 'cn') {
         lang = 'zh'
-        document.title = '投票'
       } else {
         lang = 'en'
-        document.title = 'Vote'
       }
       const i18n = new VueI18n({
           locale: lang,    // 语言标识, 通过切换locale的值来实现语言切换,this.$i18n.locale 
@@ -41,15 +42,15 @@ browserConnect().then( res => {
             'en': require('./common/lang/en').langEn    // 英文语言包
           }
       })
-  
-  
-  
+
+
+
       Vue.prototype.$axios = axios;
       Vue.use(VueAxios, axios)
       Vue.use(vueSmoothScroll)
-  
+
       Vue.config.productionTip = false
-  
+
       /* eslint-disable no-new */
       new Vue({
         el: '#app',
@@ -59,5 +60,5 @@ browserConnect().then( res => {
         template: '<App/>'
       })
     })
-  }, 1000)
+  })
 })

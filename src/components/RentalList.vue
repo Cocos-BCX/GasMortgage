@@ -127,8 +127,9 @@ export default {
         console.log('=======getAccountInfo=======')
         console.log(res)
         _this.myAccountName = res.account_name
-      let localhost = "http://192.168.15.60:8010/api/v1/mortgage"
-        let resUrl = "http://vote.test.cocosbcx.net/api/api/v1/mortgage";
+        let localhost = "http://192.168.15.60:8010/api/v1/mortgage"
+        // let resUrl = "http://vote.test.cocosbcx.net/api/api/v1/mortgage";
+        let resUrl = "https://vote.cocosbcx.net/api/api/v1/mortgage";
         let formData = {
           account_id: res.account_id,
           type: 'mortgager'

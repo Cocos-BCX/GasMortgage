@@ -304,6 +304,9 @@ export default {
           return false
       }
       claimVestingBalance(_this.asset_id).then( res=>{
+        console.log("====claimVestingBalance=======res=========")
+        console.log(_this.asset_id)
+        console.log(res)
         if (res.code == 1) {
           if (_this.asset_id_cocos) {
             claimVestingBalance(_this.asset_id_cocos).then( res=>{
@@ -397,14 +400,17 @@ export default {
       let _this = this
       getAccountInfo().then( res => {
       let localhost = "http://192.168.15.60:8010/api/v1/mortgage"
-        let resUrl = "http://vote.test.cocosbcx.net/api/api/v1/mortgage";
+        let resUrl = "https://vote.cocosbcx.net/api/api/v1/mortgage";
         let formData = {
           account_id: res.account_id,
           type: 'mortgager'
         }
+        console.log(res.account_id)
         _this.$axios
         .post(resUrl, formData)
         .then(function(response) {
+          console.log('response')
+          console.log(response)
           _this.mortgageList = response.data.result
           _this.mortgageAssetSelf = 0
           _this.mortgageAsset = 0
@@ -415,7 +421,10 @@ export default {
             let myMortgager = response.data.result.filter((li) => {
               return li.beneficiary == res.account_id
             })[0]
-            _this.mortgageAssetSelf = (Number(myMortgager.collateral)/Math.pow(10,5))
+            if (myMortgager) {
+              
+              _this.mortgageAssetSelf = (Number(myMortgager.collateral)/Math.pow(10,5))
+            }
 
             // 自己抵押给所有人的数量  包括自己
             let myMortgagerlist = response.data.result
