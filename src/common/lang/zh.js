@@ -15,7 +15,8 @@ export const langZh = {
         GASMortgage: 'GAS 抵押',
         GasRedemption: 'GAS 赎回',
         putInCOCOS:'请输入 COCOS 数量',
-        receivingAccount: '取回账号',
+        receivingAccount: '取回账户',
+        RetrieveAccount: '取回账户',
         Yourself: '自己',
         Others: '他人',
         NextStep: '下一步',
@@ -31,7 +32,8 @@ export const langZh = {
         MortgagorAccountCannotBeEmpty: '抵押人账户不能为空',
         NumberBlocksGenerated: '已生产区块数',
         AvailableVotesRemaining: '剩余可用票数',
-
+        receiveAccount: '接收账号',
+        hours24: '预计24小时完成'
     },
     common: {
         vote: '投票',
@@ -93,7 +95,9 @@ export const langZh = {
             '3': '账号不匹配',
             '4': '网络繁忙或账号不匹配',
             '5': '网络繁忙',
-            '6': '密码错误'
+            '6': '密码错误',
+            '7': '暂时没有可领取COCOS&GAS',
+            '8': '账户不存在'
         },
         publishVotes:{
             '1': '请导入账户私钥（owner）'
