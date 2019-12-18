@@ -16,6 +16,7 @@ export const langEn = {
         GasRedemption: 'Gas Redemption',
         putInCOCOS:'Please put in the number of COCOS',
         receivingAccount: 'Receiving account',
+        RetrieveAccount: 'Retrieve account',
         Yourself: 'Yourself',
         Others: 'Others',
         NextStep: 'Next step',
@@ -31,6 +32,9 @@ export const langEn = {
         MortgagorAccountCannotBeEmpty: 'Mortgagor\'s account cannot be empty',
         NumberBlocksGenerated: 'Number of blocks generated',
         AvailableVotesRemaining: 'Available votes remaining',
+        receiveAccount: 'Receive account',
+        hours24: 'Expected to be completed in 24 hours',
+
 
     },
     common: {
@@ -96,7 +100,9 @@ export const langEn = {
             '3': 'The account do not match',
             '4': 'Network is busy or the account do not match',
             '5': 'Network is busy',
-            '6': 'Password error'
+            '6': 'Password error',
+            '7': 'There is no COCOS&GAS available',
+            '8': 'Account does not exist'
         },
         creatNHAssetOrder: {
             '1': 'Order submitted',
