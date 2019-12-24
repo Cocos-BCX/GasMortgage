@@ -8,7 +8,7 @@ import './assets/css/public.css'
 import axios from 'axios'
 import VueAxios from 'vue-axios'
 import vueSmoothScroll from 'vue-smooth-scroll'
-import { initBcx, browserConnect, walletLanguage } from '../libs/bcx.api'
+import { initConnect, browserConnect, walletLanguage } from '../libs/bcx.api'
 import { initRootFontSize } from '../libs/Utils'
 import { Popup, Indicator, Loadmore, Toast } from 'mint-ui'
 import 'mint-ui/lib/style.css'
@@ -19,13 +19,25 @@ Vue.component(Popup.name, Popup);
 Vue.component(Loadmore.name, Loadmore);
 initRootFontSize();
 
-initBcx().then( initBcxRes => {
-  console.log("=initBcxRes=")
-  console.log(initBcxRes)
-  
-  browserConnect().then( browserConnectRes => {
 
-    console.log("=======")
+
+browserConnect().then( res => {
+  return new Promise((resolve,reject)=>{
+    initConnect().then( initConnectRes => {
+      resolve(initConnectRes)
+    })
+  })
+}).then( result => {
+  console.log("==============result=================result")
+  console.log("2019-12-24 17:24 update")
+  console.log(result)
+  return new Promise((resolve,reject)=>{
+    browserConnect().then( res => {
+      resolve(res)
+    })
+  })
+}).then( browserConnectRes => {
+  console.log("=initBcxRes= 2019-12-17")
     console.log(browserConnectRes)
     walletLanguage().then( res => {
 
@@ -60,5 +72,4 @@ initBcx().then( initBcxRes => {
         template: '<App/>'
       })
     })
-  })
 })

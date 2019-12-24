@@ -153,6 +153,35 @@ export let browserConnect = function () {
 }
 
 
+
+export let initConnect = function () {
+  
+  return new Promise(async function (resolve, reject) {
+    
+    bcx.initConnect().then( res => {
+        bcx = {}
+        var _configParams={
+          ws_node_list:[
+              {url:res.ws,name:res.name},   
+          ],
+          networks:[
+              {
+                  core_asset:"COCOS",
+                  chain_id: res.chainId 
+              }
+          ], 
+          faucet_url: res.faucetUrl,
+          auto_reconnect:true,
+          real_sub:true,
+          check_cached_nodes_data:false
+      }
+      bcx = new BCX(_configParams);
+      resolve(true)
+    })
+  })
+}
+
+
 // 获取语言
 export let walletLanguage = function () {
   
@@ -421,11 +450,11 @@ export let queryVestingBalance = async function (account) {
 
 // 立即领取
 export let claimVestingBalance = function (id) {
-  Indicator.open({
-    spinnerType: 'fading-circle'
-  });
   return new Promise(function (resolve, reject) {
     
+      Indicator.open({
+        spinnerType: 'fading-circle'
+      });
       bcx.claimVestingBalance({
         id: id
       }).then(res=>{

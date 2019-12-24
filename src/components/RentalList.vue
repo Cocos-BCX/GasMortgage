@@ -8,7 +8,14 @@
         <span class="unit">COCOS</span>
       </div>
     </div> -->
-    <div v-if="redeemList.length == 0" class="empty">{{$t('tipsMessage.business.noData')}}</div>
+    <div v-if="redeemList.length == 0" class="empty">
+      <!-- {{$t('tipsMessage.business.noData')}} -->
+      <div class="empty-icon">
+          <img src="../assets/images/empty-list.png" alt="">
+          <p>{{$t('tipsMessage.business.noData')}}</p>
+      </div>
+      
+    </div>
     <div class="list-li-container" v-for="(li, index) in redeemList" @click="showRedeemPopup(index, li.beneficiary)" :key="index">
       <p class="node-name">{{beneficiaryAccountNameJson[li.beneficiary]}}</p>
       <p class="already-secured-title">{{$t('business.mortgaged')}}</p>
@@ -240,12 +247,30 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .empty{
+  position: fixed;
   width: 100%;
-  height: 2rem;
-  line-height: 2rem;
+  height: 100%;
+  top: 0;
+  left: 0;
   font-size: 0.32rem;
   text-align: center;
   color: #aaaaaa;
+  background: #fff;
+}
+.empty .empty-icon{
+  width: 100%;
+  position: absolute;
+  top: 30%;
+}
+.empty .empty-icon img{
+  display: block;
+  margin: 0 auto 0;
+  padding: 0;
+}
+.empty .empty-icon p{
+  font-size: 0.26rem;
+  text-align: center;
+  margin-top: 0.3rem;
 }
 .home {
   width: 100%;

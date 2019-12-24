@@ -68,8 +68,8 @@
         <div class="receiving-account-bar">
           <div class="title">
             <!-- <ul>接收账号</ul> -->
-            <ul v-if="isMortgage">接收账号</ul>
-            <ul v-if="!isMortgage">{{$t('business.receivingAccount')}}</ul>
+            <ul v-if="isMortgage">{{$t('business.receiveAccount')}}</ul>
+            <ul v-if="!isMortgage">{{$t('business.RetrieveAccount')}}</ul>
             <ul class="tab">
               <li @click="changeIsSelf(true)">
                 <img v-if="isSelf" src="../assets/images/circle.png" alt="">
@@ -182,7 +182,7 @@ export default {
       let _this = this
 
       Toast({
-        message: '预计24小时完成',
+        message: _this.$t('business.hours24'),
         className: 'toast-style',
         duration: 3000
       });
@@ -303,11 +303,20 @@ export default {
           });
           return false
       }
-      claimVestingBalance(_this.asset_id).then( res=>{
+
+      let assetIdArr = []
+      if (_this.asset_id) {
+        assetIdArr.push(_this.asset_id)
+      }
+      if (_this.asset_id_cocos) {
+        assetIdArr.push(_this.asset_id_cocos)
+      }
+      console.log('assetIdArr')
+      console.log(assetIdArr)
+      claimVestingBalance(assetIdArr).then( res=>{
+        console.log("====claimVestingBalance=======res=========")
+        console.log(res)
         if (res.code == 1) {
-          if (_this.asset_id_cocos) {
-            claimVestingBalance(_this.asset_id_cocos).then( res=>{
-              if (res.code == 1) {
                 Toast({
                   message: _this.$t('business.SuccessfulReceiving'),
                   className: 'toast-style',
@@ -316,24 +325,35 @@ export default {
                 setTimeout( function (params) {
                   _this.queryAccountBalancesAjax()
                 }, 1000)
-              } else {
-                _this.codeErr(res)
-                setTimeout( function (params) {
+          // if (_this.asset_id_cocos) {
+          //   claimVestingBalance(_this.asset_id_cocos).then( res=>{
+          //     if (res.code == 1) {
+          //       Toast({
+          //         message: _this.$t('business.SuccessfulReceiving'),
+          //         className: 'toast-style',
+          //         duration: 3000
+          //       });
+          //       setTimeout( function (params) {
+          //         _this.queryAccountBalancesAjax()
+          //       }, 1000)
+          //     } else {
+          //       _this.codeErr(res)
+          //       setTimeout( function (params) {
                   
-                  _this.queryAccountBalancesAjax()
-                }, 1000)
-              }
-            })
-          } else {
-            Toast({
-              message: _this.$t('business.SuccessfulReceiving'),
-              className: 'toast-style',
-              duration: 3000
-            });
-            setTimeout( function (params) {
-              _this.queryAccountBalancesAjax()
-            }, 1000)
-          }
+          //         _this.queryAccountBalancesAjax()
+          //       }, 1000)
+          //     }
+          //   })
+          // } else {
+          //   Toast({
+          //     message: _this.$t('business.SuccessfulReceiving'),
+          //     className: 'toast-style',
+          //     duration: 3000
+          //   });
+          //   setTimeout( function (params) {
+          //     _this.queryAccountBalancesAjax()
+          //   }, 1000)
+          // }
         } else {
           _this.codeErr(res)
           // console.log(res)
@@ -342,9 +362,6 @@ export default {
           //   className: 'toast-style',
           //   duration: 3000
           // });
-          setTimeout( function (params) {
-            _this.queryAccountBalancesAjax()
-          }, 1000)
         }
         
       })
@@ -769,7 +786,13 @@ export default {
         } else if (res.message.indexOf("Account does not exist")>-1) {
           Toast({
             duration: 3000,
-            message: '账户不存在',
+            message: _this.$t('interFaceMessage.common[8]'),
+            className: 'toast-style',
+          })
+        } else if (res.message.indexOf("No reward available")>-1) {
+          Toast({
+            duration: 2000,
+            message: _this.$t('interFaceMessage.common[7]'),
             className: 'toast-style',
           })
         } else {
