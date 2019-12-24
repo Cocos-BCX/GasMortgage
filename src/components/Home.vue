@@ -311,9 +311,10 @@ export default {
       if (_this.asset_id_cocos) {
         assetIdArr.push(_this.asset_id_cocos)
       }
+      console.log('assetIdArr')
+      console.log(assetIdArr)
       claimVestingBalance(assetIdArr).then( res=>{
         console.log("====claimVestingBalance=======res=========")
-        console.log(_this.asset_id)
         console.log(res)
         if (res.code == 1) {
           
