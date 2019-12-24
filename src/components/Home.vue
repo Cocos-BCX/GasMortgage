@@ -317,7 +317,6 @@ export default {
         console.log("====claimVestingBalance=======res=========")
         console.log(res)
         if (res.code == 1) {
-          
                 Toast({
                   message: _this.$t('business.SuccessfulReceiving'),
                   className: 'toast-style',
