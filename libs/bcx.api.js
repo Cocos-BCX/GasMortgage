@@ -356,10 +356,6 @@ export let lookupBlockRewardsById =  function () {
   return new Promise(async function (resolve, reject) {
     getAccountInfo().then( getAccountInfoResult => {
       if (!getAccountInfoResult) return false
-      console.log('----------getAccountInfoResult------')
-      console.log(getAccountInfoResult)
-      console.log(getAccountInfoResult[cacheKey.accountId])
-      console.log(bcx)
       bcx.lookupBlockRewardsById({
         account_id: getAccountInfoResult[cacheKey.accountId]
       }).then(res => {
@@ -399,8 +395,6 @@ export let updateCollateralForGas = function (params) {
     spinnerType: 'fading-circle'
   });
   return new Promise(function (resolve, reject) {
-    console.log('------updateCollateralForGas--++++++++++++++++++++----params---------------')
-    console.log(params)
     bcx.updateCollateralForGas({
         // 抵押人
         mortgager: params.mortgager,
@@ -412,8 +406,6 @@ export let updateCollateralForGas = function (params) {
         isPropose: params.isPropose
     }).then(res=>{
       Indicator.close();
-      console.log('----------updateCollateralForGas-----res-----------')
-      console.log(res)
       resolve(res)
     }).catch( err => {
       Indicator.close();
