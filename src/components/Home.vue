@@ -273,7 +273,6 @@ export default {
     queryAccountInfoAjax(){
       let _this = this
       queryAccountInfo().then( res => {
-        
           // 总余额
         let balances = res.data.balances.filter((blance) => {
           return blance.asset_type == "1.3.0"
@@ -282,12 +281,12 @@ export default {
         let lockedAsset = 0
         if (res.data.account.asset_locked.locked_total.length == 0) {
           
-          _this.availablBalance = Number((Number(balances.balance) - 0)/Math.pow(10,5))
+          _this.availablBalance = Number((Number(balances.balance) - 0)/Math.pow(10,8))
         } else {
           let lockedAsset = res.data.account.asset_locked.locked_total.filter((lockedblance) => {
             if (lockedblance[0] == "1.3.0") return lockedblance 
           })[0];
-          _this.availablBalance = parseInt((Number(balances.balance) - Number(lockedAsset[1]))/Math.pow(10,5))
+          _this.availablBalance = parseInt((Number(balances.balance) - Number(lockedAsset[1]))/Math.pow(10,8))
         }
         _this.queryDataByIdsAjax()
         
@@ -311,11 +310,7 @@ export default {
       if (_this.asset_id_cocos) {
         assetIdArr.push(_this.asset_id_cocos)
       }
-      console.log('assetIdArr')
-      console.log(assetIdArr)
       claimVestingBalance(assetIdArr).then( res=>{
-        console.log("====claimVestingBalance=======res=========")
-        console.log(res)
         if (res.code == 1) {
                 Toast({
                   message: _this.$t('business.SuccessfulReceiving'),
@@ -370,6 +365,7 @@ export default {
       let _this = this
         getAccountInfo().then( getAccountInfoResult => {
         return new Promise(function (resolve, reject) {
+          // getAccountInfoResult[cacheKey.accountId] 
           queryDataByIds([getAccountInfoResult[cacheKey.accountId]]).then( res => {
               if (res.code == 1) {
                 resolve(res.data[0].cashback_vb)
@@ -419,12 +415,9 @@ export default {
           account_id: res.account_id,
           type: 'mortgager'
         }
-        console.log(res.account_id)
         _this.$axios
         .post(resUrl, formData)
         .then(function(response) {
-          console.log('response')
-          console.log(response)
           _this.mortgageList = response.data.result
           _this.mortgageAssetSelf = 0
           _this.mortgageAsset = 0
@@ -437,13 +430,13 @@ export default {
             })[0]
             if (myMortgager) {
               
-              _this.mortgageAssetSelf = (Number(myMortgager.collateral)/Math.pow(10,5))
+              _this.mortgageAssetSelf = (Number(myMortgager.collateral)/Math.pow(10,8))
             }
 
             // 自己抵押给所有人的数量  包括自己
             let myMortgagerlist = response.data.result
             for (let i = 0; i < myMortgagerlist.length; i++) {
-              _this.mortgageAsset += Number(myMortgagerlist[i].collateral)/Math.pow(10,5)
+              _this.mortgageAsset += Number(myMortgagerlist[i].collateral)/Math.pow(10,8)
               
             }
             if (_this.mortgageAsset.toString().indexOf('.') > -1) {
@@ -456,7 +449,7 @@ export default {
             
           
           for (let i = 0; i < response.data.result.length; i++) {
-            response.data.result[i].collateral_format = (Number(response.data.result[i].collateral)/Math.pow(10,5))
+            response.data.result[i].collateral_format = (Number(response.data.result[i].collateral)/Math.pow(10,8))
 
             // 通过用户accountId获取用户名称
             _this.queryDataByIdsAjaxSearch([response.data.result[i].beneficiary])
@@ -513,6 +506,7 @@ export default {
           updateCollateralForGas({
             // 抵押人
             mortgager: getAccountInfoResult[cacheKey.accountName],
+            // mortgager: 'bigcocos',
             // 受益人
             beneficiary: _this.isSelf?getAccountInfoResult[cacheKey.accountName]:_this.receiverGASaccount,
             // 抵押数量  COCOS
@@ -651,6 +645,7 @@ export default {
           updateCollateralForGas({
             // 抵押人
             mortgager: getAccountInfoResult[cacheKey.accountName],
+            // mortgager: 'bigcocos',
             // 受益人
             beneficiary: _this.receiverGASaccount,
             // 抵押数量  COCOS
